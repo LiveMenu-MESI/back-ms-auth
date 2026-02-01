@@ -1,0 +1,64 @@
+services:
+  postgres:
+    image: postgres
+    container_name: postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql
+      - ../containers/postgres/init-multiple-dbs.sh:/docker-entrypoint-initdb.d/init.sh
+    ports:
+      - "${DB_PORT}:5432"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      retries: 10
+  pgbouncer:
+    image: edoburu/pgbouncer
+    container_name: pgbouncer
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "${PGBOUNCER_PORT}:6432"
+    volumes:
+      - ../containers/pgbouncer/pgbouncer.ini:/etc/pgbouncer/pgbouncer.ini
+      - ../containers/pgbouncer/userlist.txt:/etc/pgbouncer/userlist.txt
+    environment:
+      POOL_MODE: ${PGBOUNCER_POOL_MODE}
+      MAX_CLIENT_CONN: ${PGBOUNCER_MAX_CLIENT_CONN}
+      DEFAULT_POOL_SIZE: ${PGBOUNCER_DEFAULT_POOL_SIZE}
+      AUTH_TYPE: md5
+    command: ["/usr/bin/pgbouncer", "/etc/pgbouncer/pgbouncer.ini"]
+    restart: unless-stopped
+
+  keycloak:
+    build:
+      context: ../containers/keycloak
+    container_name: keycloak
+    env_file:
+      - .env
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: ${KC_DB_URL}
+      KC_DB_USERNAME: ${KC_DB_USERNAME}
+      KC_DB_PASSWORD: ${KC_DB_PASSWORD}
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+      KC_HOSTNAME: ${KC_HOSTNAME}
+      KC_HEALTH_ENABLED: "true"
+      KC_METRICS_ENABLED: "true"
+    ports:
+      - "8180:8080"
+      - "8443:8443" 
+    depends_on:
+      pgbouncer:
+        condition: service_started
+    command: start --optimized
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
