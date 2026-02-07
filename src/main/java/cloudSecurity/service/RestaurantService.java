@@ -151,5 +151,24 @@ public class RestaurantService {
         Restaurant restaurant = findByIdAndUserEmailOrThrow(restaurantId, userEmail);
         restaurant.delete();
     }
+
+    /**
+     * Finds a restaurant by slug (for public access).
+     * Returns null if not found.
+     */
+    public Restaurant findBySlug(String slug) {
+        return Restaurant.find("slug", slug).firstResult();
+    }
+
+    /**
+     * Finds a restaurant by slug or throws NotFoundException.
+     */
+    public Restaurant findBySlugOrThrow(String slug) {
+        Restaurant restaurant = findBySlug(slug);
+        if (restaurant == null) {
+            throw new NotFoundException("Restaurant not found with slug: " + slug);
+        }
+        return restaurant;
+    }
 }
 

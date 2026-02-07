@@ -1,5 +1,6 @@
 package cloudSecurity.resource.auth;
 
+import cloudSecurity.resource.BaseResource;
 import cloudSecurity.service.auth.KeycloakAdminService;
 import cloudSecurity.service.auth.KeycloakIntrospectionService;
 import cloudSecurity.service.auth.SessionService;
@@ -144,6 +145,63 @@ public class AuthResource {
        
     }
 
+    /** Refreshes access token using refresh token. Accepts refresh_token in body or REFRESH_TOKEN cookie. */
+    @POST
+    @Path("/refresh")
+    public Uni<Response> refresh(RefreshTokenRequest req) {
+        // Get refresh token from body or cookie
+        String refreshToken = req != null && req.refresh_token() != null && !req.refresh_token().isBlank()
+                ? req.refresh_token()
+                : null;
+
+        if (refreshToken == null) {
+            return Uni.createFrom().item(Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of("error", "Refresh token is required"))
+                    .build());
+        }
+
+        return oidcClient.refreshTokens(refreshToken)
+                .onItem().transform(tokens -> {
+                    String newAccessToken = tokens.getAccessToken();
+                    String newRefreshToken = tokens.getRefreshToken();
+                    int expiresIn = 3600;
+
+                    Map<String, Object> body = Map.of(
+                            "access_token", newAccessToken,
+                            "refresh_token", newRefreshToken != null ? newRefreshToken : refreshToken,
+                            "expires_in", expiresIn,
+                            "token_type", "Bearer"
+                    );
+
+                    NewCookie sessionCookie = new NewCookie(
+                            "SESSION",
+                            newAccessToken,
+                            "/",
+                            null,
+                            "auth",
+                            expiresIn,
+                            true,
+                            true);
+                    int refreshMaxAge = 7 * 24 * 3600; // 7 days
+                    NewCookie refreshCookie = new NewCookie(
+                            "REFRESH_TOKEN",
+                            newRefreshToken != null ? newRefreshToken : refreshToken,
+                            "/",
+                            null,
+                            "auth",
+                            refreshMaxAge,
+                            true,
+                            true);
+
+                    return Response.ok(body).cookie(sessionCookie).cookie(refreshCookie).build();
+                })
+                .onFailure().recoverWithItem(throwable -> {
+                    return Response.status(Response.Status.UNAUTHORIZED)
+                            .entity(Map.of("error", "Invalid or expired refresh token"))
+                            .build();
+                });
+    }
+
     /** Revokes access and refresh tokens in Keycloak and clears SESSION and REFRESH_TOKEN cookies. */
     @POST
     @Path("/logout")
@@ -171,11 +229,9 @@ public class AuthResource {
         return Response.ok("OK").build();
     }
 
+    // bearerToken method removed - use BaseResource.bearerToken() instead
     private static String bearerToken(String authorization) {
-        if (authorization == null || !authorization.startsWith("Bearer ")) {
-            return null;
-        }
-        return authorization.substring(7).trim();
+        return BaseResource.bearerToken(authorization);
     }
 
     /**
@@ -193,4 +249,5 @@ public class AuthResource {
 
 record LoginRequest(String email, String password) {}
 record RegisterRequest(String email, String password) {}
+record RefreshTokenRequest(String refresh_token) {}
 

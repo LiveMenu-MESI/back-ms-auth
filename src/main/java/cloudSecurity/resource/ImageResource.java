@@ -114,6 +114,46 @@ public class ImageResource extends BaseResource {
     }
 
     /**
+     * Deletes an image and all its variants from GCS.
+     * DELETE /api/v1/images/{filename}
+     * 
+     * @param filename The image filename (e.g., "uuid.jpg")
+     */
+    @DELETE
+    @Path("/{filename}")
+    public Response deleteImage(
+            @HeaderParam("Authorization") String authorization,
+            @PathParam("filename") String filename) {
+        
+        // Validate authentication
+        String userEmail = getCurrentUserEmail(authorization);
+        if (userEmail == null) {
+            return unauthorized();
+        }
+
+        // Security: prevent path traversal
+        if (filename.contains("..") || filename.contains("/") || filename.contains("\\")) {
+            return badRequest("Invalid filename");
+        }
+
+        try {
+            boolean deleted = imageService.deleteImage(filename);
+            if (deleted) {
+                return Response.noContent().build();
+            } else {
+                return notFound("Image not found");
+            }
+        } catch (IllegalArgumentException e) {
+            return badRequest(e.getMessage());
+        } catch (Exception e) {
+            Log.errorf("Error deleting image: %s", e.getMessage());
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity(Map.of("error", "Failed to delete image: " + e.getMessage()))
+                    .build();
+        }
+    }
+
+    /**
      * Validates if the variant name is valid.
      */
     private boolean isValidVariant(String variant) {

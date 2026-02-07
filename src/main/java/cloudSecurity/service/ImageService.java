@@ -11,9 +11,6 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -252,5 +249,56 @@ public class ImageService {
             return "webp";
         }
         return "jpg";
+    }
+
+    /**
+     * Deletes an image and all its variants from GCS.
+     * 
+     * @param filename The base filename (e.g., "uuid.jpg" or "uuid.webp")
+     * @return true if at least one variant was deleted, false if none existed
+     * @throws IOException If deletion fails
+     */
+    public boolean deleteImage(String filename) throws IOException {
+        if (filename == null || filename.isBlank()) {
+            throw new IllegalArgumentException("Filename cannot be null or empty");
+        }
+
+        // Security: prevent path traversal
+        if (filename.contains("..") || filename.contains("/") || filename.contains("\\")) {
+            throw new IllegalArgumentException("Invalid filename");
+        }
+
+        // Extract base name without extension for variant paths
+        String baseName = filename;
+        int lastDot = filename.lastIndexOf('.');
+        if (lastDot > 0) {
+            baseName = filename.substring(0, lastDot);
+        }
+
+        boolean deletedAny = false;
+        String[] variants = {"original", "thumbnail", "medium", "large"};
+
+        // Try to delete all variants
+        for (String variant : variants) {
+            try {
+                // Also try with different extensions (jpg, webp, png)
+                String[] extensions = {"jpg", "webp", "png"};
+                for (String ext : extensions) {
+                    String variantPathWithExt = variant + "/" + baseName + "." + ext;
+                    try {
+                        if (gcpStorageService.deleteFile(variantPathWithExt)) {
+                            deletedAny = true;
+                        }
+                    } catch (Exception e) {
+                        // Continue with next variant/extension
+                        Log.debugf("Could not delete variant %s: %s", variantPathWithExt, e.getMessage());
+                    }
+                }
+            } catch (Exception e) {
+                Log.debugf("Error deleting variant %s: %s", variant, e.getMessage());
+            }
+        }
+
+        return deletedAny;
     }
 }

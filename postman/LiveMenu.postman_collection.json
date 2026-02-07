@@ -7,6 +7,7 @@
   "variable": [
     { "key": "baseUrl", "value": "http://localhost:8080", "type": "string" },
     { "key": "access_token", "value": "", "type": "string" },
+    { "key": "refresh_token", "value": "", "type": "string", "description": "Refresh token for token renewal" },
     { "key": "restaurantId", "value": "", "type": "string", "description": "UUID of a restaurant (set after creating one)" },
     { "key": "categoryId", "value": "", "type": "string", "description": "UUID of a category (set after creating one)" },
     { "key": "dishId", "value": "", "type": "string", "description": "UUID of a dish (set after creating one)" }
@@ -47,6 +48,10 @@
                   "        pm.collectionVariables.set('access_token', json.access_token);",
                   "        console.log('Access token saved to collection variable');",
                   "    }",
+                  "    if (json.refresh_token) {",
+                  "        pm.collectionVariables.set('refresh_token', json.refresh_token);",
+                  "        console.log('Refresh token saved to collection variable');",
+                  "    }",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -83,6 +88,46 @@
               "path": ["api", "v1", "auth", "user"]
             },
             "description": "Protected endpoint. Requires valid JWT in Authorization header. Run Login first."
+          }
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh_token\": \"{{refresh_token}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/refresh",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "refresh"]
+            },
+            "description": "Refreshes the access token using a refresh token. Returns new access_token and refresh_token. Automatically updates collection variables.",
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "exec": [
+                    "if (pm.response.code === 200) {",
+                    "    const json = pm.response.json();",
+                    "    if (json.access_token) {",
+                    "        pm.collectionVariables.set('access_token', json.access_token);",
+                    "        console.log('Access token refreshed and saved');",
+                    "    }",
+                    "    if (json.refresh_token) {",
+                    "        pm.collectionVariables.set('refresh_token', json.refresh_token);",
+                    "        console.log('Refresh token updated');",
+                    "    }",
+                    "}"
+                  ],
+                  "type": "text/javascript"
+                }
+              }
+            ]
           }
         },
         {
@@ -867,9 +912,186 @@
             },
             "description": "Redirects to the public GCP Storage URL for the image. This endpoint is kept for backward compatibility. Images are served directly from GCP Storage via public URLs returned in the upload response."
           }
+        },
+        {
+          "name": "Delete Image",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/images/:filename",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "images", ":filename"],
+              "variable": [
+                {
+                  "key": "filename",
+                  "value": "image-uuid.webp",
+                  "description": "Image filename (UUID with extension). Deletes all variants (original, thumbnail, medium, large)."
+                }
+              ]
+            },
+            "description": "Deletes an image and all its variants (original, thumbnail, medium, large) from GCP Storage. Requires authentication."
+          }
         }
       ],
       "description": "Image upload and management endpoints (CU-05). Upload endpoint requires authentication via Bearer token. Images are processed, optimized, and stored in GCP Storage with multiple size variants."
+    },
+    {
+      "name": "Public Menu (CU-06)",
+      "item": [
+        {
+          "name": "Get Public Menu by Slug",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/public/menu/:slug",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "public", "menu", ":slug"],
+              "variable": [
+                {
+                  "key": "slug",
+                  "value": "my-restaurant",
+                  "description": "Restaurant slug (URL-friendly identifier)"
+                }
+              ]
+            },
+            "description": "Gets the public menu for a restaurant by slug. This endpoint is public and does not require authentication. Results are cached for performance.\n\nReturns:\n- Restaurant information (name, logo, description, etc.)\n- Categories with their dishes\n- Only active categories and available dishes are included\n\n**Note:** The frontend should use this endpoint to render the public menu page."
+          }
+        }
+      ],
+      "description": "Public menu endpoints (CU-06). These endpoints are public and do not require authentication. Used for displaying the menu to customers via QR code or direct URL."
+    },
+    {
+      "name": "QR Code Generation (CU-07)",
+      "item": [
+        {
+          "name": "Get QR Code Info",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/restaurants/:restaurantId/qr",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "admin", "restaurants", ":restaurantId", "qr"],
+              "variable": [
+                {
+                  "key": "restaurantId",
+                  "value": "{{restaurantId}}",
+                  "description": "UUID of the restaurant"
+                }
+              ]
+            },
+            "description": "Gets QR code information for preview. Returns restaurant info, QR URL, public menu URL, and available size/format options. Requires authentication."
+          }
+        },
+        {
+          "name": "Download QR Code",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/restaurants/:restaurantId/qr/download?size=M&format=PNG&includeLogo=false",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "admin", "restaurants", ":restaurantId", "qr", "download"],
+              "query": [
+                {
+                  "key": "size",
+                  "value": "M",
+                  "description": "QR size: S (200x200), M (400x400), L (800x800), XL (1200x1200). Default: M"
+                },
+                {
+                  "key": "format",
+                  "value": "PNG",
+                  "description": "Output format: PNG or SVG. Default: PNG"
+                },
+                {
+                  "key": "includeLogo",
+                  "value": "false",
+                  "description": "Include restaurant logo in center: true or false. Default: false"
+                }
+              ],
+              "variable": [
+                {
+                  "key": "restaurantId",
+                  "value": "{{restaurantId}}",
+                  "description": "UUID of the restaurant"
+                }
+              ]
+            },
+            "description": "Generates and downloads a QR code for the restaurant. The QR code points to the public menu URL.\n\n**Query Parameters:**\n- size: S, M, L, or XL (default: M)\n- format: PNG or SVG (default: PNG)\n- includeLogo: true/false (default: false)\n\n**Note:** SVG format is not yet implemented. Use PNG for now.\n\n**Error Correction Level:** H (30%)\n\n**URL Format:** https://{domain}/m/{slug}"
+          }
+        }
+      ],
+      "description": "QR code generation endpoints (CU-07). Requires authentication. Allows restaurant owners to generate and download QR codes for their public menu."
+    },
+    {
+      "name": "Analytics (Optional)",
+      "item": [
+        {
+          "name": "Get Analytics Dashboard",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/restaurants/:restaurantId/analytics",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "admin", "restaurants", ":restaurantId", "analytics"],
+              "variable": [
+                {
+                  "key": "restaurantId",
+                  "value": "{{restaurantId}}",
+                  "description": "UUID of the restaurant"
+                }
+              ]
+            },
+            "description": "Gets analytics dashboard with statistics about menu views, popular dishes, and visitor metrics. Requires authentication."
+          }
+        },
+        {
+          "name": "Export Analytics to CSV",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/restaurants/:restaurantId/analytics/export?startDate=&endDate=",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "admin", "restaurants", ":restaurantId", "analytics", "export"],
+              "query": [
+                {
+                  "key": "startDate",
+                  "value": "",
+                  "description": "ISO 8601 date (optional, default: 30 days ago). Example: 2024-01-01T00:00:00"
+                },
+                {
+                  "key": "endDate",
+                  "value": "",
+                  "description": "ISO 8601 date (optional, default: now). Example: 2024-01-31T23:59:59"
+                }
+              ],
+              "variable": [
+                {
+                  "key": "restaurantId",
+                  "value": "{{restaurantId}}",
+                  "description": "UUID of the restaurant"
+                }
+              ]
+            },
+            "description": "Exports analytics data to CSV format. Returns a CSV file with menu view data. Requires authentication."
+          }
+        }
+      ],
+      "description": "Analytics endpoints (optional feature). Provides statistics about menu views and visitor behavior. Requires authentication."
     }
   ]
 }

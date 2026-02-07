@@ -4,7 +4,6 @@ import cloudSecurity.service.RestaurantService;
 import cloudSecurity.service.auth.TokenService;
 
 import jakarta.inject.Inject;
-import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.core.Response;
 
 import java.util.Map;
@@ -38,7 +37,7 @@ public abstract class BaseResource {
     /**
      * Extracts Bearer token from Authorization header.
      */
-    protected static String bearerToken(String authorization) {
+    public static String bearerToken(String authorization) {
         if (authorization == null || !authorization.startsWith("Bearer ")) {
             return null;
         }

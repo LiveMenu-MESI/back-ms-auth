@@ -118,6 +118,40 @@ public class GCPStorageService {
     }
 
     /**
+     * Deletes a file from Google Cloud Storage.
+     * 
+     * @param objectPath The path/name of the object in the bucket
+     * @return true if the file was deleted, false if it didn't exist
+     * @throws IOException If deletion fails
+     */
+    public boolean deleteFile(String objectPath) throws IOException {
+        try {
+            if (bucketName == null || bucketName.isBlank()) {
+                throw new IOException("GCP Storage bucket name is not configured");
+            }
+
+            initializeStorage();
+
+            Log.debugf("Deleting from GCS: gs://%s/%s", bucketName, objectPath);
+
+            BlobId blobId = BlobId.of(bucketName, objectPath);
+            boolean deleted = storage.delete(blobId);
+
+            if (deleted) {
+                Log.infof("Successfully deleted file from GCS: gs://%s/%s", bucketName, objectPath);
+            } else {
+                Log.warnf("File not found in GCS: gs://%s/%s", bucketName, objectPath);
+            }
+
+            return deleted;
+
+        } catch (Exception e) {
+            Log.errorf("Error deleting file from GCS: %s", e.getMessage(), e);
+            throw new IOException("Failed to delete file from GCS: " + e.getMessage(), e);
+        }
+    }
+
+    /**
      * Checks if the storage client is initialized.
      * 
      * @return true if initialized, false otherwise
