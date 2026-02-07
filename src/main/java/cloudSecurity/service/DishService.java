@@ -24,28 +24,22 @@ public class DishService {
      * Excludes soft-deleted dishes (deleted_at IS NULL).
      */
     public List<Dish> findAllByRestaurantId(UUID restaurantId, UUID categoryId, Boolean available) {
-        StringBuilder query = new StringBuilder("restaurant.id = ?1 and deletedAt is null");
-        int paramIndex = 2;
-        
-        if (categoryId != null) {
-            query.append(" and category.id = ?").append(paramIndex++);
-        }
-        
-        if (available != null) {
-            query.append(" and available = ?").append(paramIndex++);
-        }
-        
-        query.append(" order by category.position, position");
+        String query = "restaurant.id = ?1 and deletedAt is null";
+        Object[] params = new Object[]{restaurantId};
         
         if (categoryId != null && available != null) {
-            return Dish.find(query.toString(), restaurantId, categoryId, available).list();
+            query += " and category.id = ?2 and available = ?3";
+            params = new Object[]{restaurantId, categoryId, available};
         } else if (categoryId != null) {
-            return Dish.find(query.toString(), restaurantId, categoryId).list();
+            query += " and category.id = ?2";
+            params = new Object[]{restaurantId, categoryId};
         } else if (available != null) {
-            return Dish.find(query.toString(), restaurantId, available).list();
-        } else {
-            return Dish.find(query.toString(), restaurantId).list();
+            query += " and available = ?2";
+            params = new Object[]{restaurantId, available};
         }
+        
+        query += " order by category.position, position";
+        return Dish.find(query, params).list();
     }
 
     /**
@@ -82,7 +76,6 @@ public class DishService {
             throw new NotFoundException("Category not found or doesn't belong to restaurant");
         }
 
-        // Validate name
         if (request.name() == null || request.name().isBlank()) {
             throw new IllegalArgumentException("Name is required");
         }
@@ -90,22 +83,18 @@ public class DishService {
             throw new IllegalArgumentException("Name must be at most 100 characters");
         }
 
-        // Validate description
         if (request.description() != null && request.description().length() > 300) {
             throw new IllegalArgumentException("Description must be at most 300 characters");
         }
 
-        // Validate price
         if (request.price() == null || request.price().compareTo(BigDecimal.ZERO) < 0) {
             throw new IllegalArgumentException("Price is required and must be non-negative");
         }
 
-        // Validate offerPrice
         if (request.offerPrice() != null && request.offerPrice().compareTo(BigDecimal.ZERO) < 0) {
             throw new IllegalArgumentException("Offer price must be non-negative");
         }
 
-        // Use provided position or calculate next position in category
         Integer position = request.position();
         if (position == null) {
             List<Dish> existing = Dish.find("category.id = ?1 and deletedAt is null order by position", request.categoryId()).list();
@@ -134,7 +123,6 @@ public class DishService {
     public Dish update(UUID dishId, UUID restaurantId, DishDTO.UpdateDishRequest request) {
         Dish dish = findByIdAndRestaurantIdOrThrow(dishId, restaurantId);
 
-        // Update category if provided
         if (request.categoryId() != null) {
             Category category = Category.findById(request.categoryId());
             if (category == null || !category.restaurant.id.equals(restaurantId)) {
@@ -143,7 +131,6 @@ public class DishService {
             dish.category = category;
         }
 
-        // Update name if provided
         if (request.name() != null && !request.name().isBlank()) {
             if (request.name().length() > 100) {
                 throw new IllegalArgumentException("Name must be at most 100 characters");
@@ -151,7 +138,6 @@ public class DishService {
             dish.name = request.name().trim();
         }
 
-        // Update description if provided
         if (request.description() != null) {
             if (request.description().length() > 300) {
                 throw new IllegalArgumentException("Description must be at most 300 characters");
@@ -159,7 +145,6 @@ public class DishService {
             dish.description = request.description().trim();
         }
 
-        // Update price if provided
         if (request.price() != null) {
             if (request.price().compareTo(BigDecimal.ZERO) < 0) {
                 throw new IllegalArgumentException("Price must be non-negative");
@@ -167,7 +152,6 @@ public class DishService {
             dish.price = request.price();
         }
 
-        // Update offerPrice if provided
         if (request.offerPrice() != null) {
             if (request.offerPrice().compareTo(BigDecimal.ZERO) < 0) {
                 throw new IllegalArgumentException("Offer price must be non-negative");
@@ -175,7 +159,6 @@ public class DishService {
             dish.offerPrice = request.offerPrice();
         }
 
-        // Update other fields
         if (request.imageUrl() != null) {
             dish.imageUrl = request.imageUrl();
         }

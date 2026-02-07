@@ -2,8 +2,6 @@ package cloudSecurity.resource;
 
 import cloudSecurity.dto.CategoryDTO;
 import cloudSecurity.service.CategoryService;
-import cloudSecurity.service.RestaurantService;
-import cloudSecurity.service.auth.TokenService;
 
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
@@ -12,7 +10,6 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -24,16 +21,10 @@ import java.util.stream.Collectors;
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
 @RolesAllowed("user")
-public class CategoryResource {
+public class CategoryResource extends BaseResource {
 
     @Inject
     CategoryService categoryService;
-
-    @Inject
-    RestaurantService restaurantService;
-
-    @Inject
-    TokenService tokenService;
 
     /**
      * Lists all categories for a restaurant, ordered by position.
@@ -43,20 +34,9 @@ public class CategoryResource {
     public Response listCategories(
             @HeaderParam("Authorization") String authorization,
             @PathParam("restaurantId") UUID restaurantId) {
-        String userEmail = getCurrentUserEmail(authorization);
+        String userEmail = validateRestaurantOwnership(authorization, restaurantId);
         if (userEmail == null) {
-            return Response.status(Response.Status.UNAUTHORIZED)
-                    .entity(Map.of("error", "Invalid or missing token"))
-                    .build();
-        }
-
-        // Verify restaurant belongs to user
-        try {
-            restaurantService.findByIdAndUserEmailOrThrow(restaurantId, userEmail);
-        } catch (jakarta.ws.rs.NotFoundException e) {
-            return Response.status(Response.Status.NOT_FOUND)
-                    .entity(Map.of("error", "Restaurant not found"))
-                    .build();
+            return unauthorized();
         }
 
         List<CategoryDTO.CategoryResponse> categories = categoryService.findAllByRestaurantId(restaurantId)
@@ -76,29 +56,16 @@ public class CategoryResource {
             @HeaderParam("Authorization") String authorization,
             @PathParam("restaurantId") UUID restaurantId,
             @PathParam("id") UUID categoryId) {
-        String userEmail = getCurrentUserEmail(authorization);
+        String userEmail = validateRestaurantOwnership(authorization, restaurantId);
         if (userEmail == null) {
-            return Response.status(Response.Status.UNAUTHORIZED)
-                    .entity(Map.of("error", "Invalid or missing token"))
-                    .build();
-        }
-
-        // Verify restaurant belongs to user
-        try {
-            restaurantService.findByIdAndUserEmailOrThrow(restaurantId, userEmail);
-        } catch (jakarta.ws.rs.NotFoundException e) {
-            return Response.status(Response.Status.NOT_FOUND)
-                    .entity(Map.of("error", "Restaurant not found"))
-                    .build();
+            return unauthorized();
         }
 
         try {
             var category = categoryService.findByIdAndRestaurantIdOrThrow(categoryId, restaurantId);
             return Response.ok(CategoryDTO.CategoryResponse.from(category)).build();
         } catch (jakarta.ws.rs.NotFoundException e) {
-            return Response.status(Response.Status.NOT_FOUND)
-                    .entity(Map.of("error", "Category not found"))
-                    .build();
+            return notFound("Category not found");
         }
     }
 
@@ -111,20 +78,9 @@ public class CategoryResource {
             @HeaderParam("Authorization") String authorization,
             @PathParam("restaurantId") UUID restaurantId,
             CategoryDTO.CreateCategoryRequest request) {
-        String userEmail = getCurrentUserEmail(authorization);
+        String userEmail = validateRestaurantOwnership(authorization, restaurantId);
         if (userEmail == null) {
-            return Response.status(Response.Status.UNAUTHORIZED)
-                    .entity(Map.of("error", "Invalid or missing token"))
-                    .build();
-        }
-
-        // Verify restaurant belongs to user
-        try {
-            restaurantService.findByIdAndUserEmailOrThrow(restaurantId, userEmail);
-        } catch (jakarta.ws.rs.NotFoundException e) {
-            return Response.status(Response.Status.NOT_FOUND)
-                    .entity(Map.of("error", "Restaurant not found"))
-                    .build();
+            return unauthorized();
         }
 
         try {
@@ -133,9 +89,7 @@ public class CategoryResource {
                     .entity(CategoryDTO.CategoryResponse.from(category))
                     .build();
         } catch (IllegalArgumentException e) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of("error", e.getMessage()))
-                    .build();
+            return badRequest(e.getMessage());
         }
     }
 
@@ -150,33 +104,18 @@ public class CategoryResource {
             @PathParam("restaurantId") UUID restaurantId,
             @PathParam("id") UUID categoryId,
             CategoryDTO.UpdateCategoryRequest request) {
-        String userEmail = getCurrentUserEmail(authorization);
+        String userEmail = validateRestaurantOwnership(authorization, restaurantId);
         if (userEmail == null) {
-            return Response.status(Response.Status.UNAUTHORIZED)
-                    .entity(Map.of("error", "Invalid or missing token"))
-                    .build();
-        }
-
-        // Verify restaurant belongs to user
-        try {
-            restaurantService.findByIdAndUserEmailOrThrow(restaurantId, userEmail);
-        } catch (jakarta.ws.rs.NotFoundException e) {
-            return Response.status(Response.Status.NOT_FOUND)
-                    .entity(Map.of("error", "Restaurant not found"))
-                    .build();
+            return unauthorized();
         }
 
         try {
             var category = categoryService.update(categoryId, restaurantId, request);
             return Response.ok(CategoryDTO.CategoryResponse.from(category)).build();
         } catch (jakarta.ws.rs.NotFoundException e) {
-            return Response.status(Response.Status.NOT_FOUND)
-                    .entity(Map.of("error", "Category not found"))
-                    .build();
+            return notFound("Category not found");
         } catch (IllegalArgumentException e) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of("error", e.getMessage()))
-                    .build();
+            return badRequest(e.getMessage());
         }
     }
 
@@ -190,33 +129,18 @@ public class CategoryResource {
             @HeaderParam("Authorization") String authorization,
             @PathParam("restaurantId") UUID restaurantId,
             @PathParam("id") UUID categoryId) {
-        String userEmail = getCurrentUserEmail(authorization);
+        String userEmail = validateRestaurantOwnership(authorization, restaurantId);
         if (userEmail == null) {
-            return Response.status(Response.Status.UNAUTHORIZED)
-                    .entity(Map.of("error", "Invalid or missing token"))
-                    .build();
-        }
-
-        // Verify restaurant belongs to user
-        try {
-            restaurantService.findByIdAndUserEmailOrThrow(restaurantId, userEmail);
-        } catch (jakarta.ws.rs.NotFoundException e) {
-            return Response.status(Response.Status.NOT_FOUND)
-                    .entity(Map.of("error", "Restaurant not found"))
-                    .build();
+            return unauthorized();
         }
 
         try {
             categoryService.delete(categoryId, restaurantId);
             return Response.noContent().build();
         } catch (jakarta.ws.rs.NotFoundException e) {
-            return Response.status(Response.Status.NOT_FOUND)
-                    .entity(Map.of("error", "Category not found"))
-                    .build();
+            return notFound("Category not found");
         } catch (IllegalArgumentException e) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of("error", e.getMessage()))
-                    .build();
+            return badRequest(e.getMessage());
         }
     }
 
@@ -230,50 +154,19 @@ public class CategoryResource {
             @HeaderParam("Authorization") String authorization,
             @PathParam("restaurantId") UUID restaurantId,
             CategoryDTO.ReorderCategoriesRequest request) {
-        String userEmail = getCurrentUserEmail(authorization);
+        String userEmail = validateRestaurantOwnership(authorization, restaurantId);
         if (userEmail == null) {
-            return Response.status(Response.Status.UNAUTHORIZED)
-                    .entity(Map.of("error", "Invalid or missing token"))
-                    .build();
-        }
-
-        // Verify restaurant belongs to user
-        try {
-            restaurantService.findByIdAndUserEmailOrThrow(restaurantId, userEmail);
-        } catch (jakarta.ws.rs.NotFoundException e) {
-            return Response.status(Response.Status.NOT_FOUND)
-                    .entity(Map.of("error", "Restaurant not found"))
-                    .build();
+            return unauthorized();
         }
 
         try {
             categoryService.reorder(restaurantId, request);
             return Response.noContent().build();
         } catch (jakarta.ws.rs.NotFoundException e) {
-            return Response.status(Response.Status.NOT_FOUND)
-                    .entity(Map.of("error", e.getMessage()))
-                    .build();
+            return notFound(e.getMessage());
         } catch (IllegalArgumentException e) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity(Map.of("error", e.getMessage()))
-                    .build();
+            return badRequest(e.getMessage());
         }
-    }
-
-    private String getCurrentUserEmail(String authorization) {
-        String token = bearerToken(authorization);
-        if (token == null) {
-            return null;
-        }
-        // Get user email directly from token introspection
-        return tokenService.getUserEmailFromToken(token);
-    }
-
-    private static String bearerToken(String authorization) {
-        if (authorization == null || !authorization.startsWith("Bearer ")) {
-            return null;
-        }
-        return authorization.substring(7).trim();
     }
 }
 

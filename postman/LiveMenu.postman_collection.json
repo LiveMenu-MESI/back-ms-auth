@@ -1,12 +1,15 @@
 {
   "info": {
     "name": "LiveMenu API",
-    "description": "Complete API collection for LiveMenu: Authentication, Restaurant Management (CU-02), Categories (CU-03), and Dishes (CU-04)",
+    "description": "Complete API collection for LiveMenu: Authentication, Restaurant Management (CU-02), Categories (CU-03), Dishes (CU-04), and Image Upload (CU-05)",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
-    { "key": "baseUrl", "value": "http://localhost:8080" },
-    { "key": "access_token", "value": "" }
+    { "key": "baseUrl", "value": "http://localhost:8080", "type": "string" },
+    { "key": "access_token", "value": "", "type": "string" },
+    { "key": "restaurantId", "value": "", "type": "string", "description": "UUID of a restaurant (set after creating one)" },
+    { "key": "categoryId", "value": "", "type": "string", "description": "UUID of a category (set after creating one)" },
+    { "key": "dishId", "value": "", "type": "string", "description": "UUID of a dish (set after creating one)" }
   ],
   "item": [
     {
@@ -134,7 +137,7 @@
               "variable": [
                 {
                   "key": "restaurantId",
-                  "value": "",
+                  "value": "{{restaurantId}}",
                   "description": "UUID of the restaurant"
                 }
               ]
@@ -159,8 +162,25 @@
               "host": ["{{baseUrl}}"],
               "path": ["api", "v1", "admin", "restaurants"]
             },
-            "description": "Creates a new restaurant for the current user. Name is required (max 100 chars), description is optional (max 500 chars). Users can have multiple restaurants. Returns 201 on success, 400 if validation fails."
-          }
+            "description": "Creates a new restaurant for the current user. Name is required (max 100 chars), description is optional (max 500 chars). Users can have multiple restaurants. Returns 201 on success, 400 if validation fails.\n\n**Tip:** After creating a restaurant, copy its `id` from the response and set it as the `restaurantId` collection variable for easier testing."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const json = pm.response.json();",
+                  "    if (json.id) {",
+                  "        pm.collectionVariables.set('restaurantId', json.id);",
+                  "        console.log('Restaurant ID saved to collection variable:', json.id);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
         },
         {
           "name": "Update Restaurant",
@@ -181,7 +201,7 @@
               "variable": [
                 {
                   "key": "restaurantId",
-                  "value": "",
+                  "value": "{{restaurantId}}",
                   "description": "UUID of the restaurant"
                 }
               ]
@@ -204,7 +224,7 @@
               "variable": [
                 {
                   "key": "restaurantId",
-                  "value": "",
+                  "value": "{{restaurantId}}",
                   "description": "UUID of the restaurant"
                 }
               ]
@@ -233,7 +253,7 @@
               "variable": [
                 {
                   "key": "restaurantId",
-                  "value": "",
+                  "value": "{{restaurantId}}",
                   "description": "UUID of the restaurant"
                 }
               ]
@@ -288,13 +308,30 @@
               "variable": [
                 {
                   "key": "restaurantId",
-                  "value": "",
+                  "value": "{{restaurantId}}",
                   "description": "UUID of the restaurant"
                 }
               ]
             },
-            "description": "Creates a new category. Name is required (max 50 chars). Position is optional (auto-calculated if not provided). Returns 201 on success."
-          }
+            "description": "Creates a new category. Name is required (max 50 chars). Position is optional (auto-calculated if not provided). Returns 201 on success.\n\n**Tip:** After creating a category, copy its `id` from the response and set it as the `categoryId` collection variable for easier testing."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const json = pm.response.json();",
+                  "    if (json.id) {",
+                  "        pm.collectionVariables.set('categoryId', json.id);",
+                  "        console.log('Category ID saved to collection variable:', json.id);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
         },
         {
           "name": "Update Category",
@@ -366,7 +403,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"categoryIds\": [\n    \"category-uuid-1\",\n    \"category-uuid-2\",\n    \"category-uuid-3\"\n  ]\n}"
+              "raw": "{\n  \"categoryIds\": [\n    \"{{categoryId}}\",\n    \"category-uuid-2\",\n    \"category-uuid-3\"\n  ]\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/admin/restaurants/:restaurantId/categories/reorder",
@@ -375,7 +412,7 @@
               "variable": [
                 {
                   "key": "restaurantId",
-                  "value": "",
+                  "value": "{{restaurantId}}",
                   "description": "UUID of the restaurant"
                 }
               ]
@@ -416,7 +453,7 @@
               "variable": [
                 {
                   "key": "restaurantId",
-                  "value": "",
+                  "value": "{{restaurantId}}",
                   "description": "UUID of the restaurant"
                 }
               ]
@@ -439,12 +476,12 @@
               "variable": [
                 {
                   "key": "restaurantId",
-                  "value": "",
+                  "value": "{{restaurantId}}",
                   "description": "UUID of the restaurant"
                 },
                 {
                   "key": "dishId",
-                  "value": "",
+                  "value": "{{dishId}}",
                   "description": "UUID of the dish"
                 }
               ]
@@ -462,7 +499,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"categoryId\": \"category-uuid\",\n  \"name\": \"Caesar Salad\",\n  \"description\": \"Fresh romaine lettuce with caesar dressing\",\n  \"price\": 12.99,\n  \"offerPrice\": 9.99,\n  \"imageUrl\": \"https://example.com/caesar-salad.jpg\",\n  \"featured\": true,\n  \"tags\": [\"vegetarian\", \"gluten-free\"],\n  \"position\": 1\n}"
+              "raw": "{\n  \"categoryId\": \"{{categoryId}}\",\n  \"name\": \"Caesar Salad\",\n  \"description\": \"Fresh romaine lettuce with caesar dressing\",\n  \"price\": 12.99,\n  \"offerPrice\": 9.99,\n  \"imageUrl\": \"https://example.com/caesar-salad.jpg\",\n  \"featured\": true,\n  \"tags\": [\"vegetarian\", \"gluten-free\"],\n  \"position\": 1\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/admin/restaurants/:restaurantId/dishes",
@@ -471,13 +508,128 @@
               "variable": [
                 {
                   "key": "restaurantId",
-                  "value": "",
+                  "value": "{{restaurantId}}",
                   "description": "UUID of the restaurant"
                 }
               ]
             },
-            "description": "Creates a new dish. categoryId, name, and price are required. Description max 300 chars. offerPrice, featured, tags, and position are optional. Returns 201 on success."
-          }
+            "description": "Creates a new dish. categoryId, name, and price are required. Description max 300 chars. offerPrice, featured, tags, and position are optional. Returns 201 on success.\n\n**Tip:** After creating a dish, copy its `id` from the response and set it as the `dishId` collection variable for easier testing."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const json = pm.response.json();",
+                  "    if (json.id) {",
+                  "        pm.collectionVariables.set('dishId', json.id);",
+                  "        console.log('Dish ID saved to collection variable:', json.id);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create Dish with Image",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "categoryId",
+                  "value": "{{categoryId}}",
+                  "type": "text",
+                  "description": "UUID of the category (required). Use {{categoryId}} variable or paste a category UUID."
+                },
+                {
+                  "key": "name",
+                  "value": "Caesar Salad",
+                  "type": "text",
+                  "description": "Dish name (required)"
+                },
+                {
+                  "key": "description",
+                  "value": "Fresh romaine lettuce with caesar dressing",
+                  "type": "text",
+                  "description": "Dish description (optional, max 300 chars)"
+                },
+                {
+                  "key": "price",
+                  "value": "12.99",
+                  "type": "text",
+                  "description": "Price (required)"
+                },
+                {
+                  "key": "offerPrice",
+                  "value": "9.99",
+                  "type": "text",
+                  "description": "Offer price (optional)"
+                },
+                {
+                  "key": "featured",
+                  "value": "true",
+                  "type": "text",
+                  "description": "Featured flag (optional, true/false)"
+                },
+                {
+                  "key": "tags",
+                  "value": "vegetarian,gluten-free",
+                  "type": "text",
+                  "description": "Comma-separated tags (optional)"
+                },
+                {
+                  "key": "position",
+                  "value": "1",
+                  "type": "text",
+                  "description": "Position in category (optional)"
+                },
+                {
+                  "key": "image",
+                  "type": "file",
+                  "src": [],
+                  "description": "Image file (JPEG, PNG, or WebP, max 5MB). Will be automatically processed and uploaded to GCP Storage."
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/restaurants/:restaurantId/dishes/with-image",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "admin", "restaurants", ":restaurantId", "dishes", "with-image"],
+              "variable": [
+                {
+                  "key": "restaurantId",
+                  "value": "{{restaurantId}}",
+                  "description": "UUID of the restaurant"
+                }
+              ]
+            },
+            "description": "Creates a new dish with image upload. The image will be automatically processed (resized to thumbnail, medium, and large variants) and uploaded to GCP Storage. The large variant URL will be saved as the dish imageUrl. categoryId, name, and price are required. Image is optional but recommended.\n\n**Tip:** After creating a dish, copy its `id` from the response and set it as the `dishId` collection variable for easier testing."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const json = pm.response.json();",
+                  "    if (json.id) {",
+                  "        pm.collectionVariables.set('dishId', json.id);",
+                  "        console.log('Dish ID saved to collection variable:', json.id);",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
         },
         {
           "name": "Update Dish",
@@ -489,7 +641,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"categoryId\": \"category-uuid\",\n  \"name\": \"Updated Dish Name\",\n  \"description\": \"Updated description\",\n  \"price\": 15.99,\n  \"offerPrice\": 12.99,\n  \"imageUrl\": \"https://example.com/new-image.jpg\",\n  \"available\": true,\n  \"featured\": false,\n  \"tags\": [\"spicy\", \"vegetarian\"],\n  \"position\": 2\n}"
+              "raw": "{\n  \"categoryId\": \"{{categoryId}}\",\n  \"name\": \"Updated Dish Name\",\n  \"description\": \"Updated description\",\n  \"price\": 15.99,\n  \"offerPrice\": 12.99,\n  \"imageUrl\": \"https://example.com/new-image.jpg\",\n  \"available\": true,\n  \"featured\": false,\n  \"tags\": [\"spicy\", \"vegetarian\"],\n  \"position\": 2\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/v1/admin/restaurants/:restaurantId/dishes/:dishId",
@@ -498,17 +650,109 @@
               "variable": [
                 {
                   "key": "restaurantId",
-                  "value": "",
+                  "value": "{{restaurantId}}",
                   "description": "UUID of the restaurant"
                 },
                 {
                   "key": "dishId",
-                  "value": "",
+                  "value": "{{dishId}}",
                   "description": "UUID of the dish"
                 }
               ]
             },
             "description": "Updates a dish. All fields are optional. Returns 404 if not found."
+          }
+        },
+        {
+          "name": "Update Dish with Image",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "categoryId",
+                  "value": "{{categoryId}}",
+                  "type": "text",
+                  "description": "UUID of the category (optional). Use {{categoryId}} variable or paste a category UUID."
+                },
+                {
+                  "key": "name",
+                  "value": "Updated Dish Name",
+                  "type": "text",
+                  "description": "Dish name (optional)"
+                },
+                {
+                  "key": "description",
+                  "value": "Updated description",
+                  "type": "text",
+                  "description": "Dish description (optional, max 300 chars)"
+                },
+                {
+                  "key": "price",
+                  "value": "15.99",
+                  "type": "text",
+                  "description": "Price (optional)"
+                },
+                {
+                  "key": "offerPrice",
+                  "value": "12.99",
+                  "type": "text",
+                  "description": "Offer price (optional)"
+                },
+                {
+                  "key": "available",
+                  "value": "true",
+                  "type": "text",
+                  "description": "Availability (optional, true/false)"
+                },
+                {
+                  "key": "featured",
+                  "value": "false",
+                  "type": "text",
+                  "description": "Featured flag (optional, true/false)"
+                },
+                {
+                  "key": "tags",
+                  "value": "spicy,vegetarian",
+                  "type": "text",
+                  "description": "Comma-separated tags (optional)"
+                },
+                {
+                  "key": "position",
+                  "value": "2",
+                  "type": "text",
+                  "description": "Position in category (optional)"
+                },
+                {
+                  "key": "image",
+                  "type": "file",
+                  "src": [],
+                  "description": "Image file (JPEG, PNG, or WebP, max 5MB). Will be automatically processed and uploaded to GCP Storage. If provided, will replace the existing image."
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/restaurants/:restaurantId/dishes/:dishId/with-image",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "admin", "restaurants", ":restaurantId", "dishes", ":dishId", "with-image"],
+              "variable": [
+                {
+                  "key": "restaurantId",
+                  "value": "{{restaurantId}}",
+                  "description": "UUID of the restaurant"
+                },
+                {
+                  "key": "dishId",
+                  "value": "{{dishId}}",
+                  "description": "UUID of the dish"
+                }
+              ]
+            },
+            "description": "Updates a dish with optional image upload. All fields are optional. If an image is provided, it will be automatically processed (resized to thumbnail, medium, and large variants) and uploaded to GCP Storage. The large variant URL will be saved as the dish imageUrl. Returns 404 if not found."
           }
         },
         {
@@ -526,12 +770,12 @@
               "variable": [
                 {
                   "key": "restaurantId",
-                  "value": "",
+                  "value": "{{restaurantId}}",
                   "description": "UUID of the restaurant"
                 },
                 {
                   "key": "dishId",
-                  "value": "",
+                  "value": "{{dishId}}",
                   "description": "UUID of the dish"
                 }
               ]
@@ -554,12 +798,12 @@
               "variable": [
                 {
                   "key": "restaurantId",
-                  "value": "",
+                  "value": "{{restaurantId}}",
                   "description": "UUID of the restaurant"
                 },
                 {
                   "key": "dishId",
-                  "value": "",
+                  "value": "{{dishId}}",
                   "description": "UUID of the dish"
                 }
               ]
@@ -569,6 +813,63 @@
         }
       ],
       "description": "Dish management endpoints (CU-04). All endpoints require authentication via Bearer token."
+    },
+    {
+      "name": "Image Upload (CU-05)",
+      "item": [
+        {
+          "name": "Upload Image",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "image",
+                  "type": "file",
+                  "src": [],
+                  "description": "Image file (JPEG, PNG, or WebP). Max size: 5MB. The image will be processed and stored in GCP Storage with variants: thumbnail (150x150), medium (400x400), and large (800x800)."
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/images/upload",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "images", "upload"]
+            },
+            "description": "Uploads and processes an image. Accepts multipart/form-data with field name 'image'. The backend will:\n- Validate file type (JPEG, PNG, WebP) and size (max 5MB)\n- Resize to thumbnail (150x150, 80% quality), medium (400x400, 85% quality), and large (800x800, 90% quality)\n- Optimize and convert to WebP (with JPEG fallback)\n- Upload to GCP Storage\n- Return URLs for all variants\n\nResponse includes:\n- originalUrl: URL for original image (or large if original is small)\n- thumbnailUrl: URL for 150x150 variant\n- mediumUrl: URL for 400x400 variant\n- largeUrl: URL for 800x800 variant\n- metadata: Information about the processed image\n\nRequires authentication via Bearer token."
+          }
+        },
+        {
+          "name": "Get Image (Redirect)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/images/:variant/:filename",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "images", ":variant", ":filename"],
+              "variable": [
+                {
+                  "key": "variant",
+                  "value": "large",
+                  "description": "Image variant: original, thumbnail, medium, or large"
+                },
+                {
+                  "key": "filename",
+                  "value": "image-uuid.webp",
+                  "description": "Image filename (UUID with extension)"
+                }
+              ]
+            },
+            "description": "Redirects to the public GCP Storage URL for the image. This endpoint is kept for backward compatibility. Images are served directly from GCP Storage via public URLs returned in the upload response."
+          }
+        }
+      ],
+      "description": "Image upload and management endpoints (CU-05). Upload endpoint requires authentication via Bearer token. Images are processed, optimized, and stored in GCP Storage with multiple size variants."
     }
   ]
 }

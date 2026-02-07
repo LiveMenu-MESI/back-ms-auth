@@ -42,6 +42,16 @@ nb-configuration.xml
 compose/.env
 **/userlist.txt
 
+# Google Cloud Service Account keys (NEVER commit these!)
+*.json
+!package.json
+!tsconfig.json
+service-account*.json
+*-key.json
+credentials/
+.gcp/
+**/service-account-key.json
+
 # Plugin directory
 /.quarkus/cli/plugins/
 # TLS Certificates

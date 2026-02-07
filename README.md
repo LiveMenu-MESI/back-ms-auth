@@ -12,6 +12,21 @@ Register uses the Keycloak admin user (master realm): set `KEYCLOAK_ADMIN` and `
 
 If you want to learn more about Quarkus, please visit its website: <https://quarkus.io/>.
 
+## Google Cloud Storage (GCP) Setup
+
+For image upload functionality (CU-05), you need to configure GCP Storage with HMAC credentials.
+
+See [docs/GCP_HMAC_SETUP.md](docs/GCP_HMAC_SETUP.md) for detailed instructions on how to:
+- Create a service account
+- Generate HMAC credentials (Access Key ID and Secret Access Key)
+- Create and configure a storage bucket
+- Set up environment variables
+
+Required environment variables:
+- `GCP_STORAGE_BUCKET_NAME`: Your GCP Storage bucket name
+- `GCP_STORAGE_HMAC_ACCESS_KEY`: HMAC Access Key ID
+- `GCP_STORAGE_HMAC_SECRET_KEY`: HMAC Secret Access Key
+
 ## Running the application in dev mode
 
 You can run your application in dev mode that enables live coding using:

@@ -50,6 +50,15 @@ public class AuthResource {
                     .entity(Map.of("error", "Email is required"))
                     .build();
         }
+        
+        // Validate email format
+        String email = req.email().trim().toLowerCase();
+        if (!isValidEmail(email)) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of("error", "Invalid email format"))
+                    .build();
+        }
+        
         if (req.password() == null || req.password().isBlank()) {
             return Response.status(Response.Status.BAD_REQUEST)
                     .entity(Map.of("error", "Password is required"))
@@ -62,7 +71,7 @@ public class AuthResource {
         }
 
         try {
-            keycloakAdmin.createUser(req.email(), req.password());
+            keycloakAdmin.createUser(email, req.password());
             return Response.status(Response.Status.CREATED)
                     .entity(Map.of("message", "User registered successfully"))
                     .build();
@@ -167,6 +176,18 @@ public class AuthResource {
             return null;
         }
         return authorization.substring(7).trim();
+    }
+
+    /**
+     * Validates email format using a simple regex pattern.
+     */
+    private static boolean isValidEmail(String email) {
+        if (email == null || email.isBlank()) {
+            return false;
+        }
+        // Simple email validation pattern
+        String emailPattern = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$";
+        return email.matches(emailPattern);
     }
 }
 

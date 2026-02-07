@@ -3,7 +3,6 @@ package cloudSecurity.resource;
 import cloudSecurity.entity.Restaurant;
 import cloudSecurity.dto.RestaurantDTO;
 import cloudSecurity.service.RestaurantService;
-import cloudSecurity.service.auth.TokenService;
 
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
@@ -25,13 +24,10 @@ import java.util.stream.Collectors;
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
 @RolesAllowed("user")
-public class RestaurantResource {
+public class RestaurantResource extends BaseResource {
 
     @Inject
     RestaurantService restaurantService;
-
-    @Inject
-    TokenService tokenService;
 
     /**
      * Lists all restaurants for the current user.
@@ -163,26 +159,5 @@ public class RestaurantResource {
         }
     }
 
-    /**
-     * Extracts and validates the JWT token, then returns the user email.
-     * The token should already be validated by TokenValidationFilter.
-     * This method extracts the email from the validated token.
-     */
-    private String getCurrentUserEmail(String authorization) {
-        String token = bearerToken(authorization);
-        if (token == null) {
-            return null;
-        }
-        // Token should already be validated by TokenValidationFilter
-        // But we validate again here as a safety measure
-        return tokenService.getUserEmailFromToken(token);
-    }
-
-    private static String bearerToken(String authorization) {
-        if (authorization == null || !authorization.startsWith("Bearer ")) {
-            return null;
-        }
-        return authorization.substring(7).trim();
-    }
 }
 

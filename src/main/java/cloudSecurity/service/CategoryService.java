@@ -53,7 +53,6 @@ public class CategoryService {
             throw new NotFoundException("Restaurant not found");
         }
 
-        // Validate name
         if (request.name() == null || request.name().isBlank()) {
             throw new IllegalArgumentException("Name is required");
         }
@@ -61,7 +60,6 @@ public class CategoryService {
             throw new IllegalArgumentException("Name must be at most 50 characters");
         }
 
-        // Use provided position or calculate next position
         Integer position = request.position();
         if (position == null) {
             List<Category> existing = findAllByRestaurantId(restaurantId);
@@ -85,7 +83,6 @@ public class CategoryService {
     public Category update(UUID categoryId, UUID restaurantId, CategoryDTO.UpdateCategoryRequest request) {
         Category category = findByIdAndRestaurantIdOrThrow(categoryId, restaurantId);
 
-        // Update name if provided
         if (request.name() != null && !request.name().isBlank()) {
             if (request.name().length() > 50) {
                 throw new IllegalArgumentException("Name must be at most 50 characters");
@@ -93,7 +90,6 @@ public class CategoryService {
             category.name = request.name().trim();
         }
 
-        // Update other fields
         if (request.description() != null) {
             category.description = request.description().trim();
         }
@@ -114,7 +110,6 @@ public class CategoryService {
     public void delete(UUID categoryId, UUID restaurantId) {
         Category category = findByIdAndRestaurantIdOrThrow(categoryId, restaurantId);
 
-        // Check if category has dishes
         long dishCount = Dish.find("category.id = ?1", categoryId).count();
         if (dishCount > 0) {
             throw new IllegalArgumentException("Cannot delete category with associated dishes");
@@ -125,6 +120,7 @@ public class CategoryService {
 
     /**
      * Reorders categories by updating their positions based on the provided order.
+     * Optimized to fetch all categories in one query and update in batch.
      */
     @Transactional
     public void reorder(UUID restaurantId, CategoryDTO.ReorderCategoriesRequest request) {
@@ -133,17 +129,17 @@ public class CategoryService {
             throw new IllegalArgumentException("Category IDs list cannot be empty");
         }
 
-        // Verify all categories belong to the restaurant
-        for (UUID categoryId : categoryIds) {
-            Category category = findByIdAndRestaurantId(categoryId, restaurantId);
-            if (category == null) {
-                throw new NotFoundException("Category not found: " + categoryId);
-            }
+        List<Category> categories = Category.find("id in (?1) and restaurant.id = ?2", categoryIds, restaurantId).list();
+        
+        if (categories.size() != categoryIds.size()) {
+            throw new NotFoundException("One or more categories not found or don't belong to restaurant");
         }
 
-        // Update positions
+        java.util.Map<UUID, Category> categoryMap = categories.stream()
+                .collect(java.util.stream.Collectors.toMap(c -> c.id, c -> c));
+
         for (int i = 0; i < categoryIds.size(); i++) {
-            Category category = Category.findById(categoryIds.get(i));
+            Category category = categoryMap.get(categoryIds.get(i));
             if (category != null) {
                 category.position = i + 1;
             }
