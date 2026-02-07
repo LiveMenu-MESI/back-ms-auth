@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "LiveMenu API",
-    "description": "Complete API collection for LiveMenu: Authentication and Restaurant Management (CU-02)",
+    "description": "Complete API collection for LiveMenu: Authentication, Restaurant Management (CU-02), Categories (CU-03), and Dishes (CU-04)",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -214,6 +214,361 @@
         }
       ],
       "description": "Restaurant management endpoints (CU-02). Users can have multiple restaurants. All endpoints require authentication via Bearer token."
+    },
+    {
+      "name": "Category Management (CU-03)",
+      "item": [
+        {
+          "name": "List Categories",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/restaurants/:restaurantId/categories",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "admin", "restaurants", ":restaurantId", "categories"],
+              "variable": [
+                {
+                  "key": "restaurantId",
+                  "value": "",
+                  "description": "UUID of the restaurant"
+                }
+              ]
+            },
+            "description": "Lists all categories for a restaurant, ordered by position. Requires authentication."
+          }
+        },
+        {
+          "name": "Get Category by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/restaurants/:restaurantId/categories/:categoryId",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "admin", "restaurants", ":restaurantId", "categories", ":categoryId"],
+              "variable": [
+                {
+                  "key": "restaurantId",
+                  "value": "",
+                  "description": "UUID of the restaurant"
+                },
+                {
+                  "key": "categoryId",
+                  "value": "",
+                  "description": "UUID of the category"
+                }
+              ]
+            },
+            "description": "Gets a specific category by ID. Returns 404 if not found. Requires authentication."
+          }
+        },
+        {
+          "name": "Create Category",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Appetizers\",\n  \"description\": \"Start your meal with our delicious appetizers\",\n  \"position\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/restaurants/:restaurantId/categories",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "admin", "restaurants", ":restaurantId", "categories"],
+              "variable": [
+                {
+                  "key": "restaurantId",
+                  "value": "",
+                  "description": "UUID of the restaurant"
+                }
+              ]
+            },
+            "description": "Creates a new category. Name is required (max 50 chars). Position is optional (auto-calculated if not provided). Returns 201 on success."
+          }
+        },
+        {
+          "name": "Update Category",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Category Name\",\n  \"description\": \"Updated description\",\n  \"position\": 2,\n  \"active\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/restaurants/:restaurantId/categories/:categoryId",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "admin", "restaurants", ":restaurantId", "categories", ":categoryId"],
+              "variable": [
+                {
+                  "key": "restaurantId",
+                  "value": "",
+                  "description": "UUID of the restaurant"
+                },
+                {
+                  "key": "categoryId",
+                  "value": "",
+                  "description": "UUID of the category"
+                }
+              ]
+            },
+            "description": "Updates a category. All fields are optional. Returns 404 if not found."
+          }
+        },
+        {
+          "name": "Delete Category",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/restaurants/:restaurantId/categories/:categoryId",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "admin", "restaurants", ":restaurantId", "categories", ":categoryId"],
+              "variable": [
+                {
+                  "key": "restaurantId",
+                  "value": "",
+                  "description": "UUID of the restaurant"
+                },
+                {
+                  "key": "categoryId",
+                  "value": "",
+                  "description": "UUID of the category"
+                }
+              ]
+            },
+            "description": "Deletes a category. Only if it has no dishes. Returns 204 on success, 400 if category has dishes."
+          }
+        },
+        {
+          "name": "Reorder Categories",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"categoryIds\": [\n    \"category-uuid-1\",\n    \"category-uuid-2\",\n    \"category-uuid-3\"\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/restaurants/:restaurantId/categories/reorder",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "admin", "restaurants", ":restaurantId", "categories", "reorder"],
+              "variable": [
+                {
+                  "key": "restaurantId",
+                  "value": "",
+                  "description": "UUID of the restaurant"
+                }
+              ]
+            },
+            "description": "Reorders categories by updating their positions based on the provided order. Returns 204 on success."
+          }
+        }
+      ],
+      "description": "Category management endpoints (CU-03). All endpoints require authentication via Bearer token."
+    },
+    {
+      "name": "Dish Management (CU-04)",
+      "item": [
+        {
+          "name": "List Dishes",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/restaurants/:restaurantId/dishes?categoryId=&available=",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "admin", "restaurants", ":restaurantId", "dishes"],
+              "query": [
+                {
+                  "key": "categoryId",
+                  "value": "",
+                  "description": "Optional: Filter by category UUID"
+                },
+                {
+                  "key": "available",
+                  "value": "",
+                  "description": "Optional: Filter by availability (true/false)"
+                }
+              ],
+              "variable": [
+                {
+                  "key": "restaurantId",
+                  "value": "",
+                  "description": "UUID of the restaurant"
+                }
+              ]
+            },
+            "description": "Lists all dishes for a restaurant. Optional filters: categoryId, available. Requires authentication."
+          }
+        },
+        {
+          "name": "Get Dish by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/restaurants/:restaurantId/dishes/:dishId",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "admin", "restaurants", ":restaurantId", "dishes", ":dishId"],
+              "variable": [
+                {
+                  "key": "restaurantId",
+                  "value": "",
+                  "description": "UUID of the restaurant"
+                },
+                {
+                  "key": "dishId",
+                  "value": "",
+                  "description": "UUID of the dish"
+                }
+              ]
+            },
+            "description": "Gets a specific dish by ID. Returns 404 if not found. Requires authentication."
+          }
+        },
+        {
+          "name": "Create Dish",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"categoryId\": \"category-uuid\",\n  \"name\": \"Caesar Salad\",\n  \"description\": \"Fresh romaine lettuce with caesar dressing\",\n  \"price\": 12.99,\n  \"offerPrice\": 9.99,\n  \"imageUrl\": \"https://example.com/caesar-salad.jpg\",\n  \"featured\": true,\n  \"tags\": [\"vegetarian\", \"gluten-free\"],\n  \"position\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/restaurants/:restaurantId/dishes",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "admin", "restaurants", ":restaurantId", "dishes"],
+              "variable": [
+                {
+                  "key": "restaurantId",
+                  "value": "",
+                  "description": "UUID of the restaurant"
+                }
+              ]
+            },
+            "description": "Creates a new dish. categoryId, name, and price are required. Description max 300 chars. offerPrice, featured, tags, and position are optional. Returns 201 on success."
+          }
+        },
+        {
+          "name": "Update Dish",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"categoryId\": \"category-uuid\",\n  \"name\": \"Updated Dish Name\",\n  \"description\": \"Updated description\",\n  \"price\": 15.99,\n  \"offerPrice\": 12.99,\n  \"imageUrl\": \"https://example.com/new-image.jpg\",\n  \"available\": true,\n  \"featured\": false,\n  \"tags\": [\"spicy\", \"vegetarian\"],\n  \"position\": 2\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/restaurants/:restaurantId/dishes/:dishId",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "admin", "restaurants", ":restaurantId", "dishes", ":dishId"],
+              "variable": [
+                {
+                  "key": "restaurantId",
+                  "value": "",
+                  "description": "UUID of the restaurant"
+                },
+                {
+                  "key": "dishId",
+                  "value": "",
+                  "description": "UUID of the dish"
+                }
+              ]
+            },
+            "description": "Updates a dish. All fields are optional. Returns 404 if not found."
+          }
+        },
+        {
+          "name": "Delete Dish (Soft)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/restaurants/:restaurantId/dishes/:dishId",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "admin", "restaurants", ":restaurantId", "dishes", ":dishId"],
+              "variable": [
+                {
+                  "key": "restaurantId",
+                  "value": "",
+                  "description": "UUID of the restaurant"
+                },
+                {
+                  "key": "dishId",
+                  "value": "",
+                  "description": "UUID of the dish"
+                }
+              ]
+            },
+            "description": "Soft deletes a dish (sets deleted_at timestamp). Returns 204 on success."
+          }
+        },
+        {
+          "name": "Toggle Dish Availability",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/restaurants/:restaurantId/dishes/:dishId/availability",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "admin", "restaurants", ":restaurantId", "dishes", ":dishId", "availability"],
+              "variable": [
+                {
+                  "key": "restaurantId",
+                  "value": "",
+                  "description": "UUID of the restaurant"
+                },
+                {
+                  "key": "dishId",
+                  "value": "",
+                  "description": "UUID of the dish"
+                }
+              ]
+            },
+            "description": "Toggles dish availability (available/not available). Returns updated dish."
+          }
+        }
+      ],
+      "description": "Dish management endpoints (CU-04). All endpoints require authentication via Bearer token."
     }
   ]
 }

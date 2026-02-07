@@ -44,11 +44,47 @@ public class AuthResource {
     @POST
     @Path("/register")
     public Response register(RegisterRequest req) {
+        // Validate input
+        if (req.email() == null || req.email().isBlank()) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of("error", "Email is required"))
+                    .build();
+        }
+        if (req.password() == null || req.password().isBlank()) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of("error", "Password is required"))
+                    .build();
+        }
+        if (req.password().length() < 8) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of("error", "Password must be at least 8 characters"))
+                    .build();
+        }
+
         try {
             keycloakAdmin.createUser(req.email(), req.password());
-            return Response.status(Response.Status.CREATED).build();
+            return Response.status(Response.Status.CREATED)
+                    .entity(Map.of("message", "User registered successfully"))
+                    .build();
         } catch (RuntimeException e) {
             String msg = e.getMessage() != null ? e.getMessage() : "Registration failed";
+            // Clean up error message - remove JSON wrapping if present
+            if (msg.contains("\"error\"")) {
+                // Try to extract just the error message
+                int start = msg.indexOf("\"error\"");
+                if (start >= 0) {
+                    int valueStart = msg.indexOf(":", start);
+                    if (valueStart >= 0) {
+                        int quoteStart = msg.indexOf("\"", valueStart);
+                        if (quoteStart >= 0) {
+                            int quoteEnd = msg.indexOf("\"", quoteStart + 1);
+                            if (quoteEnd >= 0) {
+                                msg = msg.substring(quoteStart + 1, quoteEnd);
+                            }
+                        }
+                    }
+                }
+            }
             return Response.status(Response.Status.BAD_REQUEST)
                     .entity(Map.of("error", msg))
                     .build();

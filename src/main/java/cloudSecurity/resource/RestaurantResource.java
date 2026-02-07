@@ -3,15 +3,13 @@ package cloudSecurity.resource;
 import cloudSecurity.entity.Restaurant;
 import cloudSecurity.dto.RestaurantDTO;
 import cloudSecurity.service.RestaurantService;
-import cloudSecurity.service.auth.KeycloakIntrospectionService;
+import cloudSecurity.service.auth.TokenService;
 
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
-
-import io.quarkus.security.identity.SecurityIdentity;
 
 import java.util.List;
 import java.util.Map;
@@ -30,13 +28,10 @@ import java.util.stream.Collectors;
 public class RestaurantResource {
 
     @Inject
-    SecurityIdentity securityIdentity;
-
-    @Inject
     RestaurantService restaurantService;
 
     @Inject
-    KeycloakIntrospectionService keycloakIntrospection;
+    TokenService tokenService;
 
     /**
      * Lists all restaurants for the current user.
@@ -170,14 +165,17 @@ public class RestaurantResource {
 
     /**
      * Extracts and validates the JWT token, then returns the user email.
+     * The token should already be validated by TokenValidationFilter.
+     * This method extracts the email from the validated token.
      */
     private String getCurrentUserEmail(String authorization) {
         String token = bearerToken(authorization);
-        if (token == null || !keycloakIntrospection.introspect(token)) {
+        if (token == null) {
             return null;
         }
-        // Get user email from SecurityIdentity (set by Quarkus OIDC)
-        return securityIdentity.getPrincipal().getName();
+        // Token should already be validated by TokenValidationFilter
+        // But we validate again here as a safety measure
+        return tokenService.getUserEmailFromToken(token);
     }
 
     private static String bearerToken(String authorization) {

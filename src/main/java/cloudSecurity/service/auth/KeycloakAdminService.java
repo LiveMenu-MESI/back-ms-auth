@@ -142,17 +142,50 @@ public class KeycloakAdminService {
                     .header("Authorization", "Bearer " + adminToken)
                     .post(Entity.entity(jsonBody, MediaType.APPLICATION_JSON_TYPE));
 
+            // If token expired (401), refresh and retry once
+            if (res.getStatus() == 401) {
+                synchronized (this) {
+                    adminToken = null; // Clear expired token
+                    obtainAdminToken(); // Get new token
+                }
+                // Retry with new token
+                res.close();
+                res = client.target(getUsersUrl())
+                        .request(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer " + adminToken)
+                        .post(Entity.entity(jsonBody, MediaType.APPLICATION_JSON_TYPE));
+            }
+
             if (res.getStatus() == 409) {
+                String errorBody = res.readEntity(String.class);
                 throw new RuntimeException("Email already registered");
             }
             if (res.getStatus() >= 400) {
-                throw new RuntimeException(res.readEntity(String.class));
+                String errorBody = res.readEntity(String.class);
+                // Try to extract a meaningful error message
+                String errorMessage = "Failed to create user";
+                try {
+                    if (errorBody != null && !errorBody.isBlank()) {
+                        // Try to parse as JSON to get error message
+                        Map<String, Object> errorJson = objectMapper.readValue(errorBody, Map.class);
+                        Object errorObj = errorJson.get("error");
+                        if (errorObj != null) {
+                            errorMessage = errorObj.toString();
+                        } else {
+                            errorMessage = errorBody;
+                        }
+                    }
+                } catch (Exception e) {
+                    // If parsing fails, use the raw body or default message
+                    errorMessage = errorBody != null && !errorBody.isBlank() ? errorBody : errorMessage;
+                }
+                throw new RuntimeException(errorMessage);
             }
             // Do not PUT the user after creation: sending user without credentials clears the password in Keycloak.
         } catch (RuntimeException e) {
             throw e;
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Failed to create user: " + e.getMessage(), e);
         } finally {
             client.close();
         }
