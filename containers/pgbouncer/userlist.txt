@@ -1,2 +1,0 @@
-"livemenu" "dbpass"
-"keycloak" "keycloak123"

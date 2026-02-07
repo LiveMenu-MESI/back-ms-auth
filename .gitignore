@@ -36,8 +36,11 @@ nb-configuration.xml
 *.orig
 *.rej
 
-# Local environment
+# Local environment and secrets (never commit)
 .env
+.env.local
+compose/.env
+**/userlist.txt
 
 # Plugin directory
 /.quarkus/cli/plugins/

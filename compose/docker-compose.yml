@@ -6,6 +6,8 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      KC_DB_PASSWORD: ${KC_DB_PASSWORD}
+      DB_PASSWORD: ${DB_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql
       - ../containers/postgres/init-multiple-dbs.sh:/docker-entrypoint-initdb.d/init.sh
@@ -22,17 +24,21 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    entrypoint: ["/bin/sh", "-c", "tr -d '\\r' < /etc/pgbouncer/entrypoint.sh | /bin/sh"]
     ports:
       - "${PGBOUNCER_PORT}:6432"
     volumes:
       - ../containers/pgbouncer/pgbouncer.ini:/etc/pgbouncer/pgbouncer.ini
-      - ../containers/pgbouncer/userlist.txt:/etc/pgbouncer/userlist.txt
+      - ../containers/pgbouncer/entrypoint.sh:/etc/pgbouncer/entrypoint.sh
     environment:
+      KC_DB_PASSWORD: ${KC_DB_PASSWORD}
+      DB_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POOL_MODE: ${PGBOUNCER_POOL_MODE}
       MAX_CLIENT_CONN: ${PGBOUNCER_MAX_CLIENT_CONN}
       DEFAULT_POOL_SIZE: ${PGBOUNCER_DEFAULT_POOL_SIZE}
       AUTH_TYPE: md5
-    command: ["/usr/bin/pgbouncer", "/etc/pgbouncer/pgbouncer.ini"]
     restart: unless-stopped
 
   keycloak:
@@ -43,21 +49,24 @@ services:
       - .env
     environment:
       KC_DB: postgres
-      KC_DB_URL: ${KC_DB_URL}
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
       KC_DB_USERNAME: ${KC_DB_USERNAME}
       KC_DB_PASSWORD: ${KC_DB_PASSWORD}
       KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
       KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
       KC_HOSTNAME: ${KC_HOSTNAME}
+      OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET}
+      KEYCLOAK_ADMIN_CLIENT_SECRET: ${KEYCLOAK_ADMIN_CLIENT_SECRET}
       KC_HEALTH_ENABLED: "true"
       KC_METRICS_ENABLED: "true"
+      KC_HTTP_ENABLED: "true"
     ports:
       - "8180:8080"
-      - "8443:8443" 
+      - "8443:8443"
     depends_on:
-      pgbouncer:
-        condition: service_started
-    command: start --optimized
+      postgres:
+        condition: service_healthy
+    command: start --optimized --import-realm
     restart: unless-stopped
 
 volumes:

@@ -2,6 +2,14 @@
 
 This project uses Quarkus, the Supersonic Subatomic Java Framework.
 
+## Secrets
+
+All secrets are provided via environment variables or a `.env` file (never committed). Copy `.env.example` to `.env` and set values; for Docker Compose use `compose/.env`. Realm client secrets, DB passwords, and Keycloak admin credentials are read from env; the realm import JSON and init scripts use placeholders or env only.
+
+## Auth (Keycloak)
+
+Register uses the Keycloak admin user (master realm): set `KEYCLOAK_ADMIN` and `KEYCLOAK_ADMIN_PASSWORD` in `.env` (same as in `compose/.env`). Start infrastructure: `cd compose && docker compose up -d`. Wait for Keycloak (~50s), then run the app: `./mvnw quarkus:dev`. Test: Postman collection in `postman/Auth-LiveMenu.postman_collection.json` (Register → Login → Get current user → Logout). If login returns "Invalid credentials" or "Account is not fully set up", reset Keycloak so the realm re-imports: `cd compose && docker compose down -v && docker compose up -d`, then register a new user and try login again.
+
 If you want to learn more about Quarkus, please visit its website: <https://quarkus.io/>.
 
 ## Running the application in dev mode

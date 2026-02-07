@@ -1,0 +1,32 @@
+{
+  "realm": "livemenu",
+  "enabled": true,
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "roles": {"realm": [{"name": "user"}]},
+  "defaultRoles": ["user"],
+  "clients": [
+    {
+      "clientId": "livemenu-backend",
+      "name": "livemenu-backend",
+      "enabled": true,
+      "publicClient": false,
+      "secret": "${OIDC_CLIENT_SECRET}",
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": false,
+      "standardFlowEnabled": false
+    },
+    {
+      "clientId": "backend-admin",
+      "name": "backend-admin",
+      "enabled": true,
+      "publicClient": false,
+      "secret": "${KEYCLOAK_ADMIN_CLIENT_SECRET}",
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "standardFlowEnabled": false
+    }
+  ]
+}

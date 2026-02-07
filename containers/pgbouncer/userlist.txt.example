@@ -1,0 +1,2 @@
+# Generated at runtime from env (KC_DB_PASSWORD, DB_PASSWORD, POSTGRES_USER, POSTGRES_PASSWORD).
+# Do not put real secrets here. See entrypoint.sh.

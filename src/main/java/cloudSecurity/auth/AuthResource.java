@@ -9,6 +9,7 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.CookieParam;
 import jakarta.ws.rs.GET;
+import jakarta.ws.rs.HeaderParam;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
@@ -17,67 +18,117 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.NewCookie;
 import jakarta.ws.rs.core.Response;
 
-@Path("/auth")
+/**
+ * REST resource for authentication: register, login, logout.
+ * Exposes /api/v1/auth/*. Accepts and returns JSON; supports cookie (SESSION) and Authorization: Bearer.
+ */
+@Path("/api/v1/auth")
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
 public class AuthResource {
 
     @Inject
     OidcClient oidcClient;
+    @Inject
     SessionService sessionService;
+    @Inject
+    KeycloakAdminService keycloakAdmin;
+    @Inject
+    KeycloakIntrospectionService keycloakIntrospection;
 
+    /** Creates a new user in the identity provider. Returns 201 on success, 400 on validation/duplicate error. */
+    @POST
+    @Path("/register")
+    public Response register(RegisterRequest req) {
+        try {
+            keycloakAdmin.createUser(req.email(), req.password());
+            return Response.status(Response.Status.CREATED).build();
+        } catch (RuntimeException e) {
+            String msg = e.getMessage() != null ? e.getMessage() : "Registration failed";
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of("error", msg))
+                    .build();
+        }
+    }
+
+    /** Exchanges email/password for tokens. Returns access_token, refresh_token, expires_in in JSON; sets SESSION and REFRESH_TOKEN cookies for logout. */
     @POST
     @Path("/login")
     public Uni<Response> login(LoginRequest req) {
-
         return oidcClient.getTokens(Map.of(
-                "username", req.username(),
-                "password", req.password())).onItem().transform(tokens -> {
+                        "username", req.email(),
+                        "password", req.password()))
+                .onItem().transform(tokens -> {
+                    String accessToken = tokens.getAccessToken();
+                    String refreshToken = tokens.getRefreshToken();
+                    int expiresIn = 3600;
 
-                    NewCookie cookie = new NewCookie(
+                    Map<String, Object> body = Map.of(
+                            "access_token", accessToken,
+                            "refresh_token", refreshToken != null ? refreshToken : "",
+                            "expires_in", expiresIn,
+                            "token_type", "Bearer"
+                    );
+
+                    NewCookie sessionCookie = new NewCookie(
                             "SESSION",
-                            tokens.getAccessToken(),
+                            accessToken,
                             "/",
                             null,
                             "auth",
-                            3600,
+                            expiresIn,
+                            true,
+                            true);
+                    int refreshMaxAge = 7 * 24 * 3600; // 7 days for refresh token cookie
+                    NewCookie refreshCookie = new NewCookie(
+                            "REFRESH_TOKEN",
+                            refreshToken != null ? refreshToken : "",
+                            "/",
+                            null,
+                            "auth",
+                            refreshMaxAge,
                             true,
                             true);
 
-                    return Response.ok().cookie(cookie).build();
+                    return Response.ok(body).cookie(sessionCookie).cookie(refreshCookie).build();
                 });
+       
     }
 
+    /** Revokes access and refresh tokens in Keycloak and clears SESSION and REFRESH_TOKEN cookies. */
     @POST
     @Path("/logout")
-    public Response logout(@CookieParam("SESSION") Cookie sessionCookie) {
+    public Response logout(
+            @CookieParam("SESSION") Cookie sessionCookie,
+            @CookieParam("REFRESH_TOKEN") Cookie refreshCookie) {
+        String accessToken = sessionCookie != null ? sessionCookie.getValue() : null;
+        String refreshToken = refreshCookie != null ? refreshCookie.getValue() : null;
+        sessionService.logoutFromKeycloak(accessToken, refreshToken);
 
-        if (sessionCookie != null) {
-            sessionService.logoutFromKeycloak(sessionCookie.getValue());
-        }
-
-        NewCookie deleteCookie = new NewCookie(
-                "SESSION",
-                "",
-                "/",
-                null,
-                "auth",
-                0,
-                true,
-                true);
-
-        return Response.noContent()
-                .cookie(deleteCookie)
-                .build();
+        NewCookie clearSession = new NewCookie("SESSION", "", "/", null, "auth", 0, true, true);
+        NewCookie clearRefresh = new NewCookie("REFRESH_TOKEN", "", "/", null, "auth", 0, true, true);
+        return Response.noContent().cookie(clearSession).cookie(clearRefresh).build();
     }
 
+    /** Protected endpoint: requires valid JWT. Validates token with Keycloak introspection; returns 200 if active, 401 if invalid or revoked. */
     @GET
     @Path("/user")
     @RolesAllowed("user")
-    public String zonaUsuario() {
-        return "Hola usuario";
+    public Response currentUser(@HeaderParam("Authorization") String authorization) {
+        String token = bearerToken(authorization);
+        if (token == null || !keycloakIntrospection.introspect(token)) {
+            return Response.status(Response.Status.UNAUTHORIZED).build();
+        }
+        return Response.ok("OK").build();
+    }
+
+    private static String bearerToken(String authorization) {
+        if (authorization == null || !authorization.startsWith("Bearer ")) {
+            return null;
+        }
+        return authorization.substring(7).trim();
     }
 }
 
-record LoginRequest(String username, String password) {
-}
+record LoginRequest(String email, String password) {}
+record RegisterRequest(String email, String password) {}
