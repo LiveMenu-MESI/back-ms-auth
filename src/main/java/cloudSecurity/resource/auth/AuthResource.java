@@ -1,4 +1,8 @@
-package cloudSecurity.auth;
+package cloudSecurity.resource.auth;
+
+import cloudSecurity.service.auth.KeycloakAdminService;
+import cloudSecurity.service.auth.KeycloakIntrospectionService;
+import cloudSecurity.service.auth.SessionService;
 
 import java.util.Map;
 
@@ -132,3 +136,4 @@ public class AuthResource {
 
 record LoginRequest(String email, String password) {}
 record RegisterRequest(String email, String password) {}
+

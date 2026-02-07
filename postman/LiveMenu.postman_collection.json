@@ -1,0 +1,220 @@
+{
+  "info": {
+    "name": "LiveMenu API",
+    "description": "Complete API collection for LiveMenu: Authentication and Restaurant Management (CU-02)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "access_token", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"testpass123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "register"]
+            },
+            "description": "Creates a new user. Returns 201 on success, 400 if email already exists."
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const json = pm.response.json();",
+                  "    if (json.access_token) {",
+                  "        pm.collectionVariables.set('access_token', json.access_token);",
+                  "        console.log('Access token saved to collection variable');",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"testpass123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "login"]
+            },
+            "description": "Returns access_token, refresh_token, expires_in. Automatically saves access_token to collection variable for protected requests."
+          }
+        },
+        {
+          "name": "Get current user",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/user",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "user"]
+            },
+            "description": "Protected endpoint. Requires valid JWT in Authorization header. Run Login first."
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/logout",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "logout"]
+            },
+            "description": "Revokes the session. Optional: send SESSION cookie if using cookie-based session."
+          }
+        }
+      ],
+      "description": "Authentication endpoints: register, login, logout, and user info."
+    },
+    {
+      "name": "Restaurant Management (CU-02)",
+      "item": [
+        {
+          "name": "List Restaurants",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/restaurants",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "admin", "restaurants"]
+            },
+            "description": "Lists all restaurants for the current user. Returns an array of restaurants. Requires authentication."
+          }
+        },
+        {
+          "name": "Get Restaurant by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/restaurants/:restaurantId",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "admin", "restaurants", ":restaurantId"],
+              "variable": [
+                {
+                  "key": "restaurantId",
+                  "value": "",
+                  "description": "UUID of the restaurant"
+                }
+              ]
+            },
+            "description": "Gets a specific restaurant by ID. Returns 404 if restaurant not found or doesn't belong to user. Requires authentication."
+          }
+        },
+        {
+          "name": "Create Restaurant",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"My Restaurant\",\n  \"description\": \"A great place to eat\",\n  \"logo\": \"https://example.com/logo.png\",\n  \"phone\": \"+1234567890\",\n  \"address\": \"123 Main St, City, Country\",\n  \"schedule\": {\n    \"monday\": {\n      \"open\": \"09:00\",\n      \"close\": \"22:00\",\n      \"closed\": false\n    },\n    \"tuesday\": {\n      \"open\": \"09:00\",\n      \"close\": \"22:00\",\n      \"closed\": false\n    },\n    \"wednesday\": {\n      \"open\": \"09:00\",\n      \"close\": \"22:00\",\n      \"closed\": false\n    },\n    \"thursday\": {\n      \"open\": \"09:00\",\n      \"close\": \"22:00\",\n      \"closed\": false\n    },\n    \"friday\": {\n      \"open\": \"09:00\",\n      \"close\": \"23:00\",\n      \"closed\": false\n    },\n    \"saturday\": {\n      \"open\": \"10:00\",\n      \"close\": \"23:00\",\n      \"closed\": false\n    },\n    \"sunday\": {\n      \"open\": \"10:00\",\n      \"close\": \"21:00\",\n      \"closed\": false\n    }\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/restaurants",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "admin", "restaurants"]
+            },
+            "description": "Creates a new restaurant for the current user. Name is required (max 100 chars), description is optional (max 500 chars). Users can have multiple restaurants. Returns 201 on success, 400 if validation fails."
+          }
+        },
+        {
+          "name": "Update Restaurant",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Restaurant Name\",\n  \"description\": \"Updated description\",\n  \"logo\": \"https://example.com/new-logo.png\",\n  \"phone\": \"+1234567891\",\n  \"address\": \"456 New St, City, Country\",\n  \"schedule\": {\n    \"monday\": {\n      \"open\": \"10:00\",\n      \"close\": \"21:00\",\n      \"closed\": false\n    },\n    \"tuesday\": {\n      \"open\": \"10:00\",\n      \"close\": \"21:00\",\n      \"closed\": false\n    },\n    \"wednesday\": {\n      \"open\": \"10:00\",\n      \"close\": \"21:00\",\n      \"closed\": false\n    },\n    \"thursday\": {\n      \"open\": \"10:00\",\n      \"close\": \"21:00\",\n      \"closed\": false\n    },\n    \"friday\": {\n      \"open\": \"10:00\",\n      \"close\": \"22:00\",\n      \"closed\": false\n    },\n    \"saturday\": {\n      \"open\": \"11:00\",\n      \"close\": \"22:00\",\n      \"closed\": false\n    },\n    \"sunday\": {\n      \"closed\": true\n    }\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/restaurants/:restaurantId",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "admin", "restaurants", ":restaurantId"],
+              "variable": [
+                {
+                  "key": "restaurantId",
+                  "value": "",
+                  "description": "UUID of the restaurant"
+                }
+              ]
+            },
+            "description": "Updates a specific restaurant by ID. All fields are optional. If name is updated, slug is automatically regenerated. Returns 404 if restaurant not found or doesn't belong to user."
+          }
+        },
+        {
+          "name": "Delete Restaurant",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{access_token}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/admin/restaurants/:restaurantId",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "admin", "restaurants", ":restaurantId"],
+              "variable": [
+                {
+                  "key": "restaurantId",
+                  "value": "",
+                  "description": "UUID of the restaurant"
+                }
+              ]
+            },
+            "description": "Deletes a specific restaurant by ID. Returns 204 on success, 404 if restaurant not found or doesn't belong to user."
+          }
+        }
+      ],
+      "description": "Restaurant management endpoints (CU-02). Users can have multiple restaurants. All endpoints require authentication via Bearer token."
+    }
+  ]
+}
+

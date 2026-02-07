@@ -1,4 +1,4 @@
-package cloudSecurity.auth;
+package cloudSecurity.service.auth;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.ws.rs.client.Client;
@@ -70,3 +70,4 @@ public class KeycloakIntrospectionService {
         }
     }
 }
+

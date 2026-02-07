@@ -1,4 +1,4 @@
-package cloudSecurity.auth;
+package cloudSecurity.service.auth;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -158,3 +158,4 @@ public class KeycloakAdminService {
         }
     }
 }
+

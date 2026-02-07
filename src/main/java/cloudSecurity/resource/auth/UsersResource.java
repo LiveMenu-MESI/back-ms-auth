@@ -1,4 +1,4 @@
-package cloudSecurity.auth;
+package cloudSecurity.resource.auth;
 
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
@@ -34,3 +34,4 @@ public class UsersResource {
         }
     }
 }
+
