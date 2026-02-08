@@ -1,6 +1,6 @@
 package cloudSecurity.resource;
 
-import cloudSecurity.service.RestaurantService;
+import cloudSecurity.service.restaurant.RestaurantService;
 import cloudSecurity.service.auth.TokenService;
 
 import jakarta.inject.Inject;
