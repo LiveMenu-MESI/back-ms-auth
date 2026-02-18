@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="384a2e46-50b1-4734-b1ef-3832b06322dc" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/compose/docker-compose.yml" beforeDir="false" afterPath="$PROJECT_DIR$/compose/docker-compose.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/containers/pgbouncer/entrypoint.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/containers/pgbouncer/pgbouncer.ini" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/containers/pgbouncer/userlist.txt.example" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/CODE_REVIEW_AND_IMPROVEMENTS.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/FRONTEND_INTEGRATION.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/GCP_CREDENTIALS_SETUP.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/GCP_HMAC_SETUP.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/GCP_HMAC_VERIFICATION.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/GCP_JSON_KEY_GENERATION.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/GCP_SERVICE_ACCOUNT_SETUP.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/IMPLEMENTATION_STATUS.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/IMPROVEMENTS_SUMMARY.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docs/REQUIREMENTS_ANALYSIS.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/postman/README.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/list-hmac-keys.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/verify-gcp-hmac.sh" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/cloudSecurity/resource/AnalyticsResource.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/cloudSecurity/resource/BaseResource.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/cloudSecurity/resource/BaseResource.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/cloudSecurity/resource/CategoryResource.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/cloudSecurity/resource/DishResource.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/cloudSecurity/resource/ImageResource.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/cloudSecurity/resource/PublicMenuResource.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/cloudSecurity/resource/QRCodeResource.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/cloudSecurity/resource/RestaurantResource.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/cloudSecurity/service/AnalyticsService.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/cloudSecurity/service/CategoryService.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/cloudSecurity/service/DishService.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/cloudSecurity/service/GCPStorageService.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/cloudSecurity/service/ImageService.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/cloudSecurity/service/PublicMenuService.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/cloudSecurity/service/QRCodeService.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/cloudSecurity/service/RestaurantService.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/test/java/cloudSecurity/GreetingResourceIT.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/test/java/cloudSecurity/GreetingResourceTest.java" beforeDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="ExternalProjectsManager">
+    <system id="GRADLE">
+      <state>
+        <projects_view>
+          <tree_state>
+            <expand />
+            <select />
+          </tree_state>
+        </projects_view>
+      </state>
+    </system>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="KubernetesApiPersistence">{}</component>
+  <component name="KubernetesApiProvider">{
+  &quot;isMigrated&quot;: true
+}</component>
+  <component name="MavenImportPreferences">
+    <option name="generalSettings">
+      <MavenGeneralSettings>
+        <option name="mavenHomeTypeForPersistence" value="WRAPPER" />
+      </MavenGeneralSettings>
+    </option>
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;customColor&quot;: &quot;&quot;,
+  &quot;associatedIndex&quot;: 3
+}</component>
+  <component name="ProjectId" id="395pft13BolTE9Kk99b3s5EVitH" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;feat/restaurant&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  }
+}</component>
+  <component name="RunManager">
+    <configuration default="true" type="JetRunConfigurationType">
+      <module name="liveMenu-be" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration default="true" type="KotlinStandaloneScriptRunConfigurationType">
+      <module name="liveMenu-be" />
+      <option name="filePath" />
+      <method v="2" />
+    </configuration>
+    <configuration name="liveMenu" type="QuarkusRunConfigurationType" factoryName="Quarkus" nameIsGenerated="true">
+      <module name="liveMenu" />
+      <QsMavenRunConfiguration>
+        <MavenSettings>
+          <option name="myGeneralSettings" />
+          <option name="myRunnerSettings" />
+          <option name="myRunnerParameters">
+            <MavenRunnerParameters>
+              <option name="cmdOptions" />
+              <option name="profiles">
+                <set />
+              </option>
+              <option name="goals">
+                <list>
+                  <option value="quarkus:dev" />
+                </list>
+              </option>
+              <option name="multimoduleDir" />
+              <option name="pomFileName" value="pom.xml" />
+              <option name="profilesMap">
+                <map />
+              </option>
+              <option name="projectsCmdOptionValues">
+                <list />
+              </option>
+              <option name="resolveToWorkspace" value="false" />
+              <option name="workingDirPath" value="$PROJECT_DIR$" />
+            </MavenRunnerParameters>
+          </option>
+        </MavenSettings>
+        <targetMavenLocalRepo />
+        <emulateTerminal>false</emulateTerminal>
+        <profile>dev</profile>
+      </QsMavenRunConfiguration>
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+  </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-jdk-9823dce3aa75-fbdcb00ec9e3-intellij.indexing.shared.core-IU-251.26927.53" />
+        <option value="bundled-js-predefined-d6986cc7102b-09060db00ec0-JavaScript-IU-251.26927.53" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="384a2e46-50b1-4734-b1ef-3832b06322dc" name="Changes" comment="" />
+      <created>1769995892961</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1769995892961</updated>
+      <workItem from="1769995895186" duration="446000" />
+      <workItem from="1770074939846" duration="366000" />
+      <workItem from="1770421256346" duration="2155000" />
+      <workItem from="1770495722183" duration="1360000" />
+      <workItem from="1770505508325" duration="94000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+</project>

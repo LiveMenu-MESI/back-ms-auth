@@ -1,0 +1,10 @@
+cloudSecurity\resource\DishResourceTest.class
+cloudSecurity\base\BaseResourceTest.class
+cloudSecurity\resource\PublicMenuResourceTest.class
+cloudSecurity\resource\CategoryResourceTest.class
+cloudSecurity\util\TestUtils.class
+cloudSecurity\resource\RestaurantResourceTest.class
+cloudSecurity\resource\ImageResourceTest.class
+cloudSecurity\resource\QRCodeResourceTest.class
+cloudSecurity\resource\AuthResourceTest.class
+cloudSecurity\resource\AnalyticsResourceTest.class
