@@ -111,7 +111,19 @@ public class ImageService {
         metadataMap.put("originalHeight", metadata.originalHeight());
         metadataMap.put("originalSizeBytes", metadata.originalSizeBytes());
         metadataMap.put("processedFormat", metadata.processedFormat());
-        metadataMap.put("variants", metadata.variants());
+        
+        // Convert ImageVariantInfo records to Map for proper JSON serialization
+        Map<String, Object> variantsMap = new HashMap<>();
+        for (Map.Entry<String, ImageDTO.ImageVariantInfo> entry : metadata.variants().entrySet()) {
+            ImageDTO.ImageVariantInfo variantInfo = entry.getValue();
+            Map<String, Object> variantMap = new HashMap<>();
+            variantMap.put("width", variantInfo.width());
+            variantMap.put("height", variantInfo.height());
+            variantMap.put("sizeBytes", variantInfo.sizeBytes());
+            variantMap.put("quality", variantInfo.quality());
+            variantsMap.put(entry.getKey(), variantMap);
+        }
+        metadataMap.put("variants", variantsMap);
 
         return new ImageDTO.ImageUploadResponse(
                 originalUrl,
