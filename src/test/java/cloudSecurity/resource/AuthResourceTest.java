@@ -1,6 +1,8 @@
 package cloudSecurity.resource;
 
 import cloudSecurity.base.BaseResourceTest;
+import cloudSecurity.service.auth.TokenService;
+import io.quarkus.test.junit.QuarkusMock;
 import io.restassured.http.ContentType;
 import org.junit.jupiter.api.Test;
 
@@ -8,6 +10,9 @@ import java.util.Map;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.*;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * Tests for AuthResource endpoints.
@@ -117,16 +122,35 @@ public class AuthResourceTest extends BaseResourceTest {
                 .when()
                 .get(AUTH_PATH + "/user")
                 .then()
-                .statusCode(401);
+                .statusCode(401)
+                .body("error", notNullValue());
     }
 
     @Test
-    public void testCurrentUser_Authenticated() {
+    public void testCurrentUser_InvalidToken_Returns401() {
+        given()
+                .header("Authorization", "Bearer invalid-token")
+                .when()
+                .get(AUTH_PATH + "/user")
+                .then()
+                .statusCode(401)
+                .body("error", notNullValue());
+    }
+
+    @Test
+    public void testCurrentUser_Authenticated_ReturnsIdAndEmail() {
+        TokenService mockTokenService = mock(TokenService.class);
+        when(mockTokenService.getCurrentUserFromToken(anyString()))
+                .thenReturn(new TokenService.CurrentUser("test-user-uuid", testUserEmail));
+        QuarkusMock.installMockForType(mockTokenService, TokenService.class);
+
         givenAuth()
                 .when()
                 .get(AUTH_PATH + "/user")
                 .then()
-                .statusCode(anyOf(is(200), is(401))); // Depends on token validation
+                .statusCode(200)
+                .body("id", equalTo("test-user-uuid"))
+                .body("email", equalTo(testUserEmail));
     }
 }
 

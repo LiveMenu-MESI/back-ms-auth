@@ -4,6 +4,7 @@ import cloudSecurity.resource.BaseResource;
 import cloudSecurity.service.auth.KeycloakAdminService;
 import cloudSecurity.service.auth.KeycloakIntrospectionService;
 import cloudSecurity.service.auth.SessionService;
+import cloudSecurity.service.auth.TokenService;
 
 import java.util.Map;
 
@@ -40,6 +41,8 @@ public class AuthResource {
     KeycloakAdminService keycloakAdmin;
     @Inject
     KeycloakIntrospectionService keycloakIntrospection;
+    @Inject
+    TokenService tokenService;
 
     /** Creates a new user in the identity provider. Returns 201 on success, 400 on validation/duplicate error. */
     @POST
@@ -217,16 +220,24 @@ public class AuthResource {
         return Response.noContent().cookie(clearSession).cookie(clearRefresh).build();
     }
 
-    /** Protected endpoint: requires valid JWT. Validates token with Keycloak introspection; returns 200 if active, 401 if invalid or revoked. */
+    /** Protected endpoint: returns current user (id, email) from JWT. Requires valid Bearer token; 401 if missing or invalid. */
     @GET
     @Path("/user")
     @RolesAllowed("user")
     public Response currentUser(@HeaderParam("Authorization") String authorization) {
         String token = bearerToken(authorization);
-        if (token == null || !keycloakIntrospection.introspect(token)) {
-            return Response.status(Response.Status.UNAUTHORIZED).build();
+        if (token == null) {
+            return Response.status(Response.Status.UNAUTHORIZED)
+                    .entity(Map.of("error", "Missing or invalid authorization header"))
+                    .build();
         }
-        return Response.ok("OK").build();
+        TokenService.CurrentUser user = tokenService.getCurrentUserFromToken(token);
+        if (user == null) {
+            return Response.status(Response.Status.UNAUTHORIZED)
+                    .entity(Map.of("error", "Invalid or expired token"))
+                    .build();
+        }
+        return Response.ok(Map.of("id", user.id(), "email", user.email())).build();
     }
 
     // bearerToken method removed - use BaseResource.bearerToken() instead

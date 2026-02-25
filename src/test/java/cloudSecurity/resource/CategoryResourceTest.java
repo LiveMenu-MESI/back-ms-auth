@@ -143,9 +143,7 @@ public class CategoryResourceTest extends BaseResourceTest {
 
     @Test
     public void testReorderCategories_Success() {
-        // Create another category
         String category2Id = createTestCategory();
-        
         givenAuth()
                 .body(Map.of(
                         "categoryIds", List.of(category2Id, categoryId)
@@ -153,7 +151,38 @@ public class CategoryResourceTest extends BaseResourceTest {
                 .when()
                 .patch(ADMIN_PATH + "/restaurants/" + restaurantId + "/categories/reorder")
                 .then()
-                .statusCode(200);
+                .statusCode(204);
+    }
+
+    @Test
+    public void testReorderCategories_EmptyCategoryIds_Returns400() {
+        givenAuth()
+                .body(Map.of("categoryIds", List.of()))
+                .when()
+                .patch(ADMIN_PATH + "/restaurants/" + restaurantId + "/categories/reorder")
+                .then()
+                .statusCode(400);
+    }
+
+    @Test
+    public void testReorderCategories_NotFoundRestaurant_Returns404() {
+        String nonExistentRestaurantId = UUID.randomUUID().toString();
+        givenAuth()
+                .body(Map.of("categoryIds", List.of(categoryId)))
+                .when()
+                .patch(ADMIN_PATH + "/restaurants/" + nonExistentRestaurantId + "/categories/reorder")
+                .then()
+                .statusCode(404);
+    }
+
+    @Test
+    public void testCreateCategory_MissingName_Returns400() {
+        givenAuth()
+                .body(Map.of("description", "No name"))
+                .when()
+                .post(ADMIN_PATH + "/restaurants/" + restaurantId + "/categories")
+                .then()
+                .statusCode(400);
     }
 }
 

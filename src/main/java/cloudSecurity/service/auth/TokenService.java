@@ -22,6 +22,9 @@ import io.quarkus.logging.Log;
 @ApplicationScoped
 public class TokenService {
 
+    /** Current user info returned by getCurrentUserFromToken. */
+    public record CurrentUser(String id, String email) {}
+
     @ConfigProperty(name = "keycloak.url")
     String keycloakUrl;
 
@@ -38,6 +41,21 @@ public class TokenService {
 
     private String getIntrospectUrl() {
         return keycloakUrl + "/realms/" + realm + "/protocol/openid-connect/token/introspect";
+    }
+
+    /**
+     * Returns the current user (id and email) from a valid access token.
+     * Id is the Keycloak subject (sub). Returns null if token is invalid or user info cannot be extracted.
+     */
+    public CurrentUser getCurrentUserFromToken(String accessToken) {
+        if (accessToken == null || accessToken.isBlank()) {
+            return null;
+        }
+        CurrentUser fromJwt = extractCurrentUserFromJWT(accessToken);
+        if (fromJwt != null && isTokenValid(accessToken)) {
+            return fromJwt;
+        }
+        return extractCurrentUserFromIntrospection(accessToken);
     }
 
     /**
@@ -78,74 +96,54 @@ public class TokenService {
     }
 
     /**
-     * Extracts email from JWT token by decoding the payload.
-     * JWT format: header.payload.signature
+     * Extracts current user (sub + email) from JWT payload. Does not validate token.
      */
-    private String extractEmailFromJWT(String token) {
+    private CurrentUser extractCurrentUserFromJWT(String token) {
         try {
             String[] parts = token.split("\\.");
             if (parts.length != 3) {
-                Log.debug("JWT does not have 3 parts");
                 return null;
             }
-
-            // Decode payload (second part) - JWT uses URL-safe Base64
             String payload = new String(Base64.getUrlDecoder().decode(parts[1]), StandardCharsets.UTF_8);
-            Log.debugf("JWT payload decoded: %s", payload);
-            
             @SuppressWarnings("unchecked")
             Map<String, Object> claims = objectMapper.readValue(payload, Map.class);
-            
-            Log.debugf("JWT claims available: %s", claims.keySet());
 
-            // Try different claim names for email (in order of preference)
-            String email = (String) claims.get("email");
-            if (email != null && !email.isBlank()) {
-                Log.debugf("Found email in 'email' claim: %s", email);
-                return email;
-            }
-
-            email = (String) claims.get("preferred_username");
-            if (email != null && !email.isBlank()) {
-                Log.debugf("Found email in 'preferred_username' claim: %s", email);
-                return email;
-            }
-
-            email = (String) claims.get("username");
-            if (email != null && !email.isBlank()) {
-                Log.debugf("Found email in 'username' claim: %s", email);
-                return email;
-            }
-
-            // Try 'sub' if it's an email format (Keycloak often uses email as sub)
             Object subObj = claims.get("sub");
-            if (subObj != null) {
-                String sub = subObj.toString();
-                if (sub.contains("@")) {
-                    Log.debugf("Found email in 'sub' claim: %s", sub);
-                    return sub;
-                }
+            String id = subObj != null ? subObj.toString() : null;
+            String email = (String) claims.get("email");
+            if (email == null || email.isBlank()) {
+                email = (String) claims.get("preferred_username");
             }
-
-            Log.warnf("Could not find email in JWT claims. Available claims: %s", claims.keySet());
-            return null;
-        } catch (IllegalArgumentException e) {
-            // Base64 decoding error
-            Log.debugf("Base64 decoding error: %s", e.getMessage());
-            return null;
+            if (email == null || email.isBlank()) {
+                email = (String) claims.get("username");
+            }
+            if ((email == null || email.isBlank()) && id != null && id.contains("@")) {
+                email = id;
+            }
+            if (id == null || id.isBlank() || email == null || email.isBlank()) {
+                return null;
+            }
+            return new CurrentUser(id, email);
         } catch (Exception e) {
-            Log.debugf("Error decoding JWT: %s", e.getMessage());
-            e.printStackTrace();
+            Log.debugf("Error extracting current user from JWT: %s", e.getMessage());
             return null;
         }
     }
 
     /**
-     * Extracts email from token introspection response.
-     * Note: This method assumes the token has already been validated.
-     * It does NOT validate the token again.
+     * Extracts email from JWT token by decoding the payload.
+     * JWT format: header.payload.signature
      */
-    private String extractEmailFromIntrospection(String accessToken) {
+    private String extractEmailFromJWT(String token) {
+        CurrentUser user = extractCurrentUserFromJWT(token);
+        return user != null ? user.email() : null;
+    }
+
+    /**
+     * Extracts current user (sub + email) from token introspection response.
+     * Returns null if token is not active or user info cannot be extracted.
+     */
+    private CurrentUser extractCurrentUserFromIntrospection(String accessToken) {
         Client client = ClientBuilder.newClient();
         try {
             String basic = Base64.getEncoder().encodeToString((clientId + ":" + clientSecret).getBytes(StandardCharsets.UTF_8));
@@ -158,45 +156,47 @@ public class TokenService {
 
             String body = res.readEntity(String.class);
             if (res.getStatus() != 200) {
-                Log.debugf("Introspection returned status: %d", res.getStatus());
                 return null;
             }
 
             @SuppressWarnings("unchecked")
             Map<String, Object> json = objectMapper.readValue(body, Map.class);
-            
-            // Note: Token validation should have been done before calling this method
-            // But we check active status as a safety measure
             if (!Boolean.TRUE.equals(json.get("active"))) {
-                Log.warn("Token introspection shows token is not active (should have been validated earlier)");
                 return null;
             }
 
-            // Try to get email from introspection response
+            Object subObj = json.get("sub");
+            String id = subObj != null ? subObj.toString() : null;
             String email = (String) json.get("email");
-            if (email != null && !email.isBlank()) {
-                return email;
+            if (email == null || email.isBlank()) {
+                email = (String) json.get("preferred_username");
             }
-
-            email = (String) json.get("preferred_username");
-            if (email != null && !email.isBlank()) {
-                return email;
+            if (email == null || email.isBlank()) {
+                email = (String) json.get("username");
             }
-
-            email = (String) json.get("username");
-            if (email != null && !email.isBlank()) {
-                return email;
+            if ((email == null || email.isBlank()) && id != null && id.contains("@")) {
+                email = id;
             }
-
-            // Log all available keys for debugging
-            Log.debugf("Introspection response keys: %s", json.keySet());
-            return null;
+            if (id == null || id.isBlank() || email == null || email.isBlank()) {
+                return null;
+            }
+            return new CurrentUser(id, email);
         } catch (Exception e) {
             Log.debugf("Error in introspection: %s", e.getMessage());
             return null;
         } finally {
             client.close();
         }
+    }
+
+    /**
+     * Extracts email from token introspection response.
+     * Note: This method assumes the token has already been validated.
+     * It does NOT validate the token again.
+     */
+    private String extractEmailFromIntrospection(String accessToken) {
+        CurrentUser user = extractCurrentUserFromIntrospection(accessToken);
+        return user != null ? user.email() : null;
     }
 
     /**

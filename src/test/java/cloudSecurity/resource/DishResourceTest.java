@@ -73,7 +73,6 @@ public class DishResourceTest extends BaseResourceTest {
     @Test
     public void testCreateDish_Success() {
         String name = "New Dish " + System.currentTimeMillis();
-        
         givenAuth()
                 .body(Map.of(
                         "name", name,
@@ -88,6 +87,21 @@ public class DishResourceTest extends BaseResourceTest {
                 .statusCode(201)
                 .body("id", notNullValue())
                 .body("name", equalTo(name));
+    }
+
+    @Test
+    public void testCreateDish_Unauthenticated() {
+        givenPublic()
+                .body(Map.of(
+                        "name", "Dish",
+                        "price", 10.0,
+                        "categoryId", categoryId,
+                        "available", true
+                ))
+                .when()
+                .post(ADMIN_PATH + "/restaurants/" + restaurantId + "/dishes")
+                .then()
+                .statusCode(401);
     }
 
     @Test
@@ -108,6 +122,24 @@ public class DishResourceTest extends BaseResourceTest {
                 .then()
                 .statusCode(200)
                 .body("id", equalTo(dishId));
+    }
+
+    @Test
+    public void testGetDishById_NotFound() {
+        givenAuth()
+                .when()
+                .get(ADMIN_PATH + "/restaurants/" + restaurantId + "/dishes/" + UUID.randomUUID())
+                .then()
+                .statusCode(404);
+    }
+
+    @Test
+    public void testGetAllDishes_Unauthenticated() {
+        givenPublic()
+                .when()
+                .get(ADMIN_PATH + "/restaurants/" + restaurantId + "/dishes")
+                .then()
+                .statusCode(401);
     }
 
     @Test
@@ -140,12 +172,30 @@ public class DishResourceTest extends BaseResourceTest {
     @Test
     public void testDeleteDish_Success() {
         String idToDelete = createTestDish();
-        
         givenAuth()
                 .when()
                 .delete(ADMIN_PATH + "/restaurants/" + restaurantId + "/dishes/" + idToDelete)
                 .then()
                 .statusCode(204);
+    }
+
+    @Test
+    public void testDeleteDish_NotFound() {
+        givenAuth()
+                .when()
+                .delete(ADMIN_PATH + "/restaurants/" + restaurantId + "/dishes/" + UUID.randomUUID())
+                .then()
+                .statusCode(404);
+    }
+
+    @Test
+    public void testUpdateDish_NotFound() {
+        givenAuth()
+                .body(Map.of("name", "Updated", "price", 99.0))
+                .when()
+                .put(ADMIN_PATH + "/restaurants/" + restaurantId + "/dishes/" + UUID.randomUUID())
+                .then()
+                .statusCode(404);
     }
 }
 
