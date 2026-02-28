@@ -50,7 +50,7 @@ services:
   livemenu:
     build:
       context: ..
-      dockerfile: src/main/docker/Dockerfile.jvm
+      dockerfile: src/main/docker/Dockerfile.jvm.multi
     image: livemenu-app:latest
     container_name: livemenu
     env_file:

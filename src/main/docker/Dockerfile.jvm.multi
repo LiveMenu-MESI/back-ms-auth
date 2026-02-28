@@ -1,0 +1,29 @@
+# Multi-stage: build the app inside Docker so "docker compose up --build" works without pre-running mvn package.
+# Stage 1: build
+FROM maven:3.9-eclipse-temurin-17-alpine AS builder
+WORKDIR /build
+
+COPY pom.xml .
+
+# Download dependencies (cache layer; only rebuild when pom changes)
+RUN mvn dependency:go-offline -B -q || true
+
+# Copy source and build (skip tests for faster image build)
+COPY src src
+RUN mvn package -DskipTests -B -q
+
+# Stage 2: runtime
+FROM registry.access.redhat.com/ubi9/openjdk-17:1.23
+ENV LANGUAGE='en_US:en'
+
+COPY --from=builder --chown=185 /build/target/quarkus-app/lib/ /deployments/lib/
+COPY --from=builder --chown=185 /build/target/quarkus-app/*.jar /deployments/
+COPY --from=builder --chown=185 /build/target/quarkus-app/app/ /deployments/app/
+COPY --from=builder --chown=185 /build/target/quarkus-app/quarkus/ /deployments/quarkus/
+
+EXPOSE 8080
+USER 185
+ENV JAVA_OPTS_APPEND="-Dquarkus.http.host=0.0.0.0 -Djava.util.logging.manager=org.jboss.logmanager.LogManager"
+ENV JAVA_APP_JAR="/deployments/quarkus-run.jar"
+
+ENTRYPOINT [ "/opt/jboss/container/java/run/run-java.sh" ]
