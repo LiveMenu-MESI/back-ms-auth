@@ -47,5 +47,36 @@ services:
     command: start --optimized --import-realm
     restart: unless-stopped
 
+  livemenu:
+    build:
+      context: ..
+      dockerfile: src/main/docker/Dockerfile.jvm
+    image: livemenu-app:latest
+    container_name: livemenu
+    env_file:
+      - .env
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/livemenu
+      DB_USER: livemenu
+      DB_PASSWORD: ${DB_PASSWORD}
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: ${KEYCLOAK_REALM:-livemenu}
+      OIDC_CLIENT_ID: ${OIDC_CLIENT_ID:-livemenu-backend}
+      OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET}
+      KEYCLOAK_ADMIN_CLIENT_ID: ${KEYCLOAK_ADMIN_CLIENT_ID:-backend-admin}
+      KEYCLOAK_ADMIN_CLIENT_SECRET: ${KEYCLOAK_ADMIN_CLIENT_SECRET}
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:8080}
+      HIBERNATE_SCHEMA_STRATEGY: ${HIBERNATE_SCHEMA_STRATEGY:-update}
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+    restart: unless-stopped
+
 volumes:
   postgres_data:
