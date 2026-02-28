@@ -9,16 +9,17 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 /**
- * Entity for tracking menu views (analytics).
- * Records each time a public menu is viewed.
+ * Records each time a specific dish is viewed via the public dish endpoint.
+ * Used for "popular dishes" analytics.
  */
 @Entity
-@Table(name = "menu_views", indexes = {
-    @Index(name = "idx_menu_view_restaurant", columnList = "restaurant_id"),
-    @Index(name = "idx_menu_view_created", columnList = "created_at"),
-    @Index(name = "idx_menu_view_restaurant_created", columnList = "restaurant_id, created_at")
+@Table(name = "dish_views", indexes = {
+    @Index(name = "idx_dish_view_restaurant", columnList = "restaurant_id"),
+    @Index(name = "idx_dish_view_dish", columnList = "dish_id"),
+    @Index(name = "idx_dish_view_created", columnList = "created_at"),
+    @Index(name = "idx_dish_view_restaurant_dish", columnList = "restaurant_id, dish_id")
 })
-public class MenuView extends PanacheEntityBase {
+public class DishView extends PanacheEntityBase {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -29,7 +30,11 @@ public class MenuView extends PanacheEntityBase {
     @JoinColumn(name = "restaurant_id", nullable = false)
     public Restaurant restaurant;
 
-    /** SHA-256 hash of IP (anonimizado). Original IP is not stored. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "dish_id", nullable = false)
+    public Dish dish;
+
+    /** SHA-256 hash of IP (anonimizado). */
     @Column(name = "ip_address", length = 64)
     public String ipAddress;
 
@@ -40,15 +45,13 @@ public class MenuView extends PanacheEntityBase {
     @Column(name = "created_at", nullable = false, updatable = false)
     public LocalDateTime createdAt;
 
-    // Default constructor for JPA
-    public MenuView() {
+    public DishView() {
     }
 
-    // Constructor for creating new views
-    public MenuView(Restaurant restaurant, String ipAddress, String userAgent) {
+    public DishView(Restaurant restaurant, Dish dish, String ipAddress, String userAgent) {
         this.restaurant = restaurant;
+        this.dish = dish;
         this.ipAddress = ipAddress;
         this.userAgent = userAgent;
     }
 }
-

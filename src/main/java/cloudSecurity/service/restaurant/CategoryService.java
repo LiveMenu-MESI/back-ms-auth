@@ -4,8 +4,10 @@ import cloudSecurity.entity.Category;
 import cloudSecurity.entity.Dish;
 import cloudSecurity.entity.Restaurant;
 import cloudSecurity.dto.CategoryDTO;
+import cloudSecurity.service.menu.PublicMenuService;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.NotFoundException;
 
@@ -17,6 +19,9 @@ import java.util.UUID;
  */
 @ApplicationScoped
 public class CategoryService {
+
+    @Inject
+    PublicMenuService publicMenuService;
 
     /**
      * Finds all categories for a restaurant, ordered by position.
@@ -73,6 +78,7 @@ public class CategoryService {
         category.description = request.description() != null ? request.description().trim() : null;
 
         category.persist();
+        publicMenuService.invalidateMenuCache(restaurant.slug);
         return category;
     }
 
@@ -100,6 +106,7 @@ public class CategoryService {
             category.active = request.active();
         }
 
+        invalidatePublicMenuCache(category.restaurant);
         return category;
     }
 
@@ -115,7 +122,9 @@ public class CategoryService {
             throw new IllegalArgumentException("Cannot delete category with associated dishes");
         }
 
+        Restaurant restaurant = category.restaurant;
         category.delete();
+        invalidatePublicMenuCache(restaurant);
     }
 
     /**
@@ -143,6 +152,16 @@ public class CategoryService {
             if (category != null) {
                 category.position = i + 1;
             }
+        }
+        Restaurant restaurant = Restaurant.findById(restaurantId);
+        if (restaurant != null) {
+            invalidatePublicMenuCache(restaurant);
+        }
+    }
+
+    private void invalidatePublicMenuCache(Restaurant restaurant) {
+        if (restaurant != null && restaurant.slug != null) {
+            publicMenuService.invalidateMenuCache(restaurant.slug);
         }
     }
 }

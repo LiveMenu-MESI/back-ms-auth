@@ -76,6 +76,25 @@ You can then execute your native executable with: `./target/liveMenu-1.0.0-SNAPS
 
 If you want to learn more about building native executables, please consult <https://quarkus.io/guides/maven-tooling>.
 
+## Rate limiting (RNF04)
+
+The API limits each client IP to **100 requests per minute** (configurable via `app.rate-limit.requests-per-minute` and `RATE_LIMIT_REQUESTS_PER_MINUTE`). When exceeded, the server responds with **429 Too Many Requests**.
+
+**To test:** Run the app, then in another terminal:
+
+```bash
+# Send 110 requests; expect first 100 OK/404, then 429
+./scripts/test-rate-limit.sh http://localhost:8080 110
+```
+
+For a quicker test with a lower limit (e.g. 5/min), start the app with:
+
+```bash
+RATE_LIMIT_REQUESTS_PER_MINUTE=5 ./mvnw quarkus:dev
+```
+
+Then run `./scripts/test-rate-limit.sh http://localhost:8080 10` — you should see 429 after 5 requests.
+
 ## Provided Code
 
 ### REST

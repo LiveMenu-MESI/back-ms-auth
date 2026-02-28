@@ -30,8 +30,8 @@ public class CategoryServiceTest {
     @Transactional
     public void reorder_updatesPositionsInOrder() {
         Restaurant restaurant = new Restaurant("test@example.com", "Test Restaurant");
-        restaurant.persist();
         restaurant.slug = "test-restaurant-" + UUID.randomUUID().toString().substring(0, 8);
+        restaurant.persist();
 
         Category cat1 = new Category(restaurant, "Cat A", 1);
         cat1.persist();

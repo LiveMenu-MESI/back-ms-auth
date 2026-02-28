@@ -8,14 +8,24 @@ import java.util.UUID;
  */
 public class QRDTO {
 
+    /** Default foreground (QR modules) and background colors (hex). */
+    public static final String DEFAULT_FOREGROUND_HEX = "#000000";
+    public static final String DEFAULT_BACKGROUND_HEX = "#FFFFFF";
+
     /**
      * QR code generation request parameters.
+     * Colors are optional (hex e.g. #000000, #FFFFFF).
      */
     public record QRGenerationRequest(
             QRSize size,
             QRFormat format,
-            Boolean includeLogo
+            Boolean includeLogo,
+            String foregroundColor,
+            String backgroundColor
     ) {
+        public QRGenerationRequest(QRSize size, QRFormat format, Boolean includeLogo) {
+            this(size, format, includeLogo, null, null);
+        }
     }
 
     /**
@@ -29,7 +39,9 @@ public class QRDTO {
             String publicMenuUrl,
             QRSize defaultSize,
             List<QRSize> availableSizes,
-            List<QRFormat> availableFormats
+            List<QRFormat> availableFormats,
+            String defaultForegroundColor,
+            String defaultBackgroundColor
     ) {
     }
 

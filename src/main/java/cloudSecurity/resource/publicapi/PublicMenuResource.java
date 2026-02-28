@@ -70,5 +70,40 @@ public class PublicMenuResource {
                     .build();
         }
     }
+
+    /**
+     * Gets a single dish by slug and dish ID (public, no auth).
+     * Each call is recorded for "popular dishes" analytics.
+     * GET /api/v1/public/menu/{slug}/dishes/{dishId}
+     */
+    @GET
+    @Path("/{slug}/dishes/{dishId}")
+    public Response getDishBySlug(
+            @PathParam("slug") String slug,
+            @PathParam("dishId") UUID dishId,
+            @HeaderParam("X-Forwarded-For") String forwardedFor,
+            @HeaderParam("User-Agent") String userAgent) {
+        try {
+            PublicMenuDTO.DishInfo dish = publicMenuService.getDishBySlug(slug, dishId);
+            // Record dish view for analytics (popular dishes)
+            try {
+                String ipAddress = forwardedFor != null ? forwardedFor.split(",")[0].trim() : null;
+                UUID restaurantId = restaurantService.findBySlugOrThrow(slug).id;
+                analyticsService.recordDishView(restaurantId, dishId, ipAddress, userAgent);
+            } catch (Exception e) {
+                Log.debugf("Failed to record dish view: %s", e.getMessage());
+            }
+            return Response.ok(dish).build();
+        } catch (jakarta.ws.rs.NotFoundException e) {
+            return Response.status(Response.Status.NOT_FOUND)
+                    .entity(Map.of("error", e.getMessage()))
+                    .build();
+        } catch (Exception e) {
+            Log.errorf(e, "Error retrieving dish %s for slug %s", dishId, slug);
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                    .entity(Map.of("error", "Failed to retrieve dish"))
+                    .build();
+        }
+    }
 }
 

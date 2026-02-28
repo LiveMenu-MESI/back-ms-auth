@@ -12,6 +12,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.NotFoundException;
 
+import io.quarkus.cache.CacheInvalidate;
 import io.quarkus.cache.CacheResult;
 
 import java.util.List;
@@ -74,16 +75,34 @@ public class PublicMenuService {
     }
 
     /**
-     * Invalidates the cache for a restaurant's public menu.
-     * Should be called when menu data changes.
-     * 
-     * Note: This is a placeholder. In a production environment, you might want to use
-     * a more sophisticated cache invalidation mechanism (e.g., Redis pub/sub).
+     * Gets a single dish by restaurant slug and dish ID for public display.
+     * Only returns dishes that are available and not soft-deleted.
+     *
+     * @param slug   Restaurant slug
+     * @param dishId Dish UUID
+     * @return Dish info for public display
+     * @throws NotFoundException if restaurant or dish not found or dish not available
      */
+    public PublicMenuDTO.DishInfo getDishBySlug(String slug, UUID dishId) {
+        Restaurant restaurant = restaurantService.findBySlugOrThrow(slug);
+        Dish dish = Dish.find(
+                "id = ?1 and restaurant.id = ?2 and available = true and deletedAt is null",
+                dishId,
+                restaurant.id
+        ).firstResult();
+        if (dish == null) {
+            throw new NotFoundException("Dish not found or not available");
+        }
+        return PublicMenuDTO.DishInfo.from(dish);
+    }
+
+    /**
+     * Invalidates the cache for a restaurant's public menu.
+     * Should be called when menu data changes (dishes or categories created/updated/deleted).
+     */
+    @CacheInvalidate(cacheName = "public-menu")
     public void invalidateMenuCache(String slug) {
-        // Cache invalidation would be handled by the cache implementation
-        // For now, this is a placeholder method
-        // In production, you might want to use @CacheInvalidate or manual cache clearing
+        // No-op: invalidation is performed by the annotation using the slug as cache key
     }
 }
 

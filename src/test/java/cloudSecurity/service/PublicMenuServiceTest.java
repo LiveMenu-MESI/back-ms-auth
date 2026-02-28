@@ -31,8 +31,8 @@ public class PublicMenuServiceTest {
     @Transactional
     public void getPublicMenuBySlug_returnsRestaurantCategoriesAndDishesOrderedByPosition() {
         Restaurant restaurant = new Restaurant("test@example.com", "Menu Test Restaurant");
-        restaurant.persist();
         restaurant.slug = "menu-test-" + UUID.randomUUID().toString().substring(0, 8);
+        restaurant.persist();
 
         Category cat1 = new Category(restaurant, "Starters", 2);
         cat1.persist();

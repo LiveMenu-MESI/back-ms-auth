@@ -71,6 +71,8 @@ public class QRCodeResource extends BaseResource {
      * - size: S, M, L, or XL (default: M)
      * - format: PNG or SVG (default: PNG)
      * - includeLogo: true/false (default: false)
+     * - foregroundColor: hex color for QR modules (e.g. #000000, default black)
+     * - backgroundColor: hex color for background (e.g. #FFFFFF, default white)
      */
     @GET
     @Path("/download")
@@ -80,7 +82,9 @@ public class QRCodeResource extends BaseResource {
             @PathParam("restaurantId") UUID restaurantId,
             @QueryParam("size") @DefaultValue("M") String sizeStr,
             @QueryParam("format") @DefaultValue("PNG") String formatStr,
-            @QueryParam("includeLogo") @DefaultValue("false") Boolean includeLogo) {
+            @QueryParam("includeLogo") @DefaultValue("false") Boolean includeLogo,
+            @QueryParam("foregroundColor") String foregroundColor,
+            @QueryParam("backgroundColor") String backgroundColor) {
         String userEmail = validateRestaurantOwnership(authorization, restaurantId);
         if (userEmail == null) {
             return unauthorized();
@@ -105,8 +109,10 @@ public class QRCodeResource extends BaseResource {
                 return badRequest("Invalid format. Must be PNG or SVG");
             }
 
-            // Generate QR code
-            byte[] qrBytes = qrCodeService.generateQRCode(restaurant, size, format, includeLogo);
+            // Generate QR code (colors optional; invalid hex falls back to black/white)
+            byte[] qrBytes = qrCodeService.generateQRCode(
+                    restaurant, size, format, includeLogo,
+                    foregroundColor, backgroundColor);
 
             // Build filename
             String filename = String.format("qr-%s-%s.%s", 

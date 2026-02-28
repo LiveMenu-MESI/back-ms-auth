@@ -56,3 +56,4 @@ credentials/
 /.quarkus/cli/plugins/
 # TLS Certificates
 .certs/
+.env

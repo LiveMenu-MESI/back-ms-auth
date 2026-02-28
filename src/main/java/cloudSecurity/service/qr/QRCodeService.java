@@ -24,6 +24,7 @@ import java.net.URL;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import io.quarkus.logging.Log;
 
@@ -41,6 +42,7 @@ public class QRCodeService {
 
     private static final ErrorCorrectionLevel ERROR_CORRECTION_LEVEL = ErrorCorrectionLevel.H; // 30%
     private static final int QUIET_ZONE = 4;
+    private static final Pattern HEX_COLOR = Pattern.compile("^#([0-9A-Fa-f]{6})$");
 
     /**
      * Generates a QR code image for a restaurant.
@@ -49,13 +51,17 @@ public class QRCodeService {
      * @param size QR code size
      * @param format Output format (PNG or SVG)
      * @param includeLogo Whether to include restaurant logo in center
+     * @param foregroundHex Optional foreground color hex (e.g. #000000), null = black
+     * @param backgroundHex Optional background color hex (e.g. #FFFFFF), null = white
      * @return Byte array of the QR code image
      */
     public byte[] generateQRCode(
             Restaurant restaurant,
             QRDTO.QRSize size,
             QRDTO.QRFormat format,
-            Boolean includeLogo) throws IOException, WriterException {
+            Boolean includeLogo,
+            String foregroundHex,
+            String backgroundHex) throws IOException, WriterException {
         
         String qrUrl = buildQRUrl(restaurant.slug);
         int dimension = size.getPixels();
@@ -69,8 +75,10 @@ public class QRCodeService {
 
         BitMatrix bitMatrix = qrCodeWriter.encode(qrUrl, BarcodeFormat.QR_CODE, dimension, dimension, hints);
 
-        // Convert to image
-        BufferedImage qrImage = matrixToImage(bitMatrix);
+        Color fg = parseHexColor(foregroundHex, 0xFF000000);
+        Color bg = parseHexColor(backgroundHex, 0xFFFFFFFF);
+        // Convert to image with custom colors
+        BufferedImage qrImage = matrixToImage(bitMatrix, fg, bg);
 
         // Add logo if requested
         if (includeLogo != null && includeLogo && restaurant.logo != null) {
@@ -96,7 +104,9 @@ public class QRCodeService {
                 publicMenuUrl,
                 QRDTO.QRSize.M, // Default size
                 Arrays.asList(QRDTO.QRSize.values()),
-                Arrays.asList(QRDTO.QRFormat.values())
+                Arrays.asList(QRDTO.QRFormat.values()),
+                QRDTO.DEFAULT_FOREGROUND_HEX,
+                QRDTO.DEFAULT_BACKGROUND_HEX
         );
     }
 
@@ -115,16 +125,30 @@ public class QRCodeService {
     }
 
     /**
-     * Converts BitMatrix to BufferedImage.
+     * Parses hex color (#RRGGBB). Returns defaultColorArgb if invalid or null.
      */
-    private BufferedImage matrixToImage(BitMatrix matrix) {
+    private Color parseHexColor(String hex, int defaultColorArgb) {
+        if (hex == null || !HEX_COLOR.matcher(hex.trim()).matches()) {
+            return new Color(defaultColorArgb, true);
+        }
+        String h = hex.trim().substring(1);
+        int rgb = Integer.parseInt(h, 16);
+        return new Color((rgb >> 16) & 0xFF, (rgb >> 8) & 0xFF, rgb & 0xFF);
+    }
+
+    /**
+     * Converts BitMatrix to BufferedImage with custom foreground and background colors.
+     */
+    private BufferedImage matrixToImage(BitMatrix matrix, Color foreground, Color background) {
         int width = matrix.getWidth();
         int height = matrix.getHeight();
         BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+        int fgRgb = foreground.getRGB();
+        int bgRgb = background.getRGB();
         
         for (int x = 0; x < width; x++) {
             for (int y = 0; y < height; y++) {
-                image.setRGB(x, y, matrix.get(x, y) ? 0xFF000000 : 0xFFFFFFFF);
+                image.setRGB(x, y, matrix.get(x, y) ? fgRgb : bgRgb);
             }
         }
         

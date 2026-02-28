@@ -10,7 +10,8 @@
     { "key": "refresh_token", "value": "", "type": "string", "description": "Refresh token for token renewal" },
     { "key": "restaurantId", "value": "", "type": "string", "description": "UUID of a restaurant (set after creating one)" },
     { "key": "categoryId", "value": "", "type": "string", "description": "UUID of a category (set after creating one)" },
-    { "key": "dishId", "value": "", "type": "string", "description": "UUID of a dish (set after creating one)" }
+    { "key": "dishId", "value": "", "type": "string", "description": "UUID of a dish (set after creating one)" },
+    { "key": "slug", "value": "my-restaurant", "type": "string", "description": "Restaurant slug for public menu endpoints" }
   ],
   "item": [
     {
@@ -960,6 +961,31 @@
             },
             "description": "Gets the public menu for a restaurant by slug. This endpoint is public and does not require authentication. Results are cached for performance.\n\nReturns:\n- Restaurant information (name, logo, description, etc.)\n- Categories with their dishes\n- Only active categories and available dishes are included\n\n**Note:** The frontend should use this endpoint to render the public menu page."
           }
+        },
+        {
+          "name": "Get Dish by Slug and ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/public/menu/:slug/dishes/:dishId",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "public", "menu", ":slug", "dishes", ":dishId"],
+              "variable": [
+                {
+                  "key": "slug",
+                  "value": "my-restaurant",
+                  "description": "Restaurant slug"
+                },
+                {
+                  "key": "dishId",
+                  "value": "{{dishId}}",
+                  "description": "UUID of the dish"
+                }
+              ]
+            },
+            "description": "Gets a single dish by restaurant slug and dish ID. Public, no authentication. Use when the customer opens dish detail (modal/page); each call is recorded for 'popular dishes' analytics.\n\nReturns: DishInfo (id, name, description, price, offerPrice, imageUrl, available, featured, tags, position).\n\n404 if restaurant or dish not found or dish not available."
+          }
         }
       ],
       "description": "Public menu endpoints (CU-06). These endpoints are public and do not require authentication. Used for displaying the menu to customers via QR code or direct URL."
@@ -1015,6 +1041,16 @@
                   "key": "includeLogo",
                   "value": "false",
                   "description": "Include restaurant logo in center: true or false. Default: false"
+                },
+                {
+                  "key": "foregroundColor",
+                  "value": "",
+                  "description": "Optional. QR modules color, hex (e.g. #000000). Default: black"
+                },
+                {
+                  "key": "backgroundColor",
+                  "value": "",
+                  "description": "Optional. Background color, hex (e.g. #FFFFFF). Default: white"
                 }
               ],
               "variable": [
@@ -1025,7 +1061,7 @@
                 }
               ]
             },
-            "description": "Generates and downloads a QR code for the restaurant. The QR code points to the public menu URL.\n\n**Query Parameters:**\n- size: S, M, L, or XL (default: M)\n- format: PNG or SVG (default: PNG)\n- includeLogo: true/false (default: false)\n\n**Note:** SVG format is not yet implemented. Use PNG for now.\n\n**Error Correction Level:** H (30%)\n\n**URL Format:** https://{domain}/m/{slug}"
+            "description": "Generates and downloads a QR code for the restaurant. The QR code points to the public menu URL.\n\n**Query Parameters:**\n- size: S, M, L, or XL (default: M)\n- format: PNG or SVG (default: PNG)\n- includeLogo: true/false (default: false)\n- foregroundColor: optional hex (e.g. #000000)\n- backgroundColor: optional hex (e.g. #FFFFFF)\n\n**Note:** SVG format is not yet implemented. Use PNG for now.\n\n**Error Correction Level:** H (30%)\n\n**URL Format:** https://{domain}/m/{slug}"
           }
         }
       ],
@@ -1087,7 +1123,7 @@
                 }
               ]
             },
-            "description": "Exports analytics data to CSV format. Returns a CSV file with menu view data. Requires authentication."
+            "description": "Exports analytics data to CSV format. Includes both menu views and dish views in one file, sorted by date.\n\n**Columns:** Type, Date, Time, IP Hash, User Agent, Dish ID, Dish Name\n- Type: 'menu' (menu opened) or 'dish' (dish detail opened)\n- For menu views, Dish ID and Dish Name are empty\n- For dish views, Dish ID and Dish Name are filled (for popular dishes analysis)\n\n**Query params:** startDate, endDate (ISO 8601, optional; default last 30 days). Requires authentication."
           }
         }
       ],

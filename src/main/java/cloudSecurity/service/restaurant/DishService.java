@@ -4,8 +4,10 @@ import cloudSecurity.entity.Dish;
 import cloudSecurity.entity.Category;
 import cloudSecurity.entity.Restaurant;
 import cloudSecurity.dto.DishDTO;
+import cloudSecurity.service.menu.PublicMenuService;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.NotFoundException;
 
@@ -18,6 +20,9 @@ import java.util.UUID;
  */
 @ApplicationScoped
 public class DishService {
+
+    @Inject
+    PublicMenuService publicMenuService;
 
     /**
      * Finds all dishes for a restaurant, optionally filtered by category and availability.
@@ -113,6 +118,7 @@ public class DishService {
         dish.tags = request.tags();
 
         dish.persist();
+        publicMenuService.invalidateMenuCache(restaurant.slug);
         return dish;
     }
 
@@ -175,6 +181,7 @@ public class DishService {
             dish.tags = request.tags();
         }
 
+        invalidatePublicMenuCache(restaurantId);
         return dish;
     }
 
@@ -185,6 +192,7 @@ public class DishService {
     public void delete(UUID dishId, UUID restaurantId) {
         Dish dish = findByIdAndRestaurantIdOrThrow(dishId, restaurantId);
         dish.delete(); // Soft delete via @SoftDelete annotation
+        invalidatePublicMenuCache(restaurantId);
     }
 
     /**
@@ -194,7 +202,15 @@ public class DishService {
     public Dish toggleAvailability(UUID dishId, UUID restaurantId) {
         Dish dish = findByIdAndRestaurantIdOrThrow(dishId, restaurantId);
         dish.available = !dish.available;
+        invalidatePublicMenuCache(restaurantId);
         return dish;
+    }
+
+    private void invalidatePublicMenuCache(UUID restaurantId) {
+        Restaurant restaurant = Restaurant.findById(restaurantId);
+        if (restaurant != null) {
+            publicMenuService.invalidateMenuCache(restaurant.slug);
+        }
     }
 }
 

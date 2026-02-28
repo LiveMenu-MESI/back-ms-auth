@@ -2,8 +2,10 @@ package cloudSecurity.service.restaurant;
 
 import cloudSecurity.entity.Restaurant;
 import cloudSecurity.dto.RestaurantDTO;
+import cloudSecurity.service.menu.PublicMenuService;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import jakarta.ws.rs.NotFoundException;
 
@@ -18,6 +20,9 @@ import java.util.UUID;
  */
 @ApplicationScoped
 public class RestaurantService {
+
+    @Inject
+    PublicMenuService publicMenuService;
 
     private static final Pattern NON_LATIN = Pattern.compile("[^\\w-]");
     private static final Pattern WHITESPACE = Pattern.compile("[\\s]");
@@ -115,6 +120,7 @@ public class RestaurantService {
     @Transactional
     public Restaurant update(UUID restaurantId, String userEmail, RestaurantDTO.UpdateRestaurantRequest request) {
         Restaurant restaurant = findByIdAndUserEmailOrThrow(restaurantId, userEmail);
+        String oldSlug = restaurant.slug;
 
         // Update name if provided
         if (request.name() != null && !request.name().isBlank()) {
@@ -140,6 +146,11 @@ public class RestaurantService {
         restaurant.address = request.address();
         restaurant.schedule = request.schedule();
 
+        // Invalidate public menu cache so name, schedule, logo, etc. are reflected
+        publicMenuService.invalidateMenuCache(restaurant.slug);
+        if (!restaurant.slug.equals(oldSlug)) {
+            publicMenuService.invalidateMenuCache(oldSlug);
+        }
         return restaurant;
     }
 
@@ -149,7 +160,9 @@ public class RestaurantService {
     @Transactional
     public void delete(UUID restaurantId, String userEmail) {
         Restaurant restaurant = findByIdAndUserEmailOrThrow(restaurantId, userEmail);
+        String slug = restaurant.slug;
         restaurant.delete();
+        publicMenuService.invalidateMenuCache(slug);
     }
 
     /**

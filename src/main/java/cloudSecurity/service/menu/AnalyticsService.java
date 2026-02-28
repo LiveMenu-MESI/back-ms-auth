@@ -2,9 +2,11 @@ package cloudSecurity.service.menu;
 
 import cloudSecurity.dto.AnalyticsDTO;
 import cloudSecurity.entity.MenuView;
+import cloudSecurity.entity.DishView;
 import cloudSecurity.entity.Restaurant;
 import cloudSecurity.entity.Dish;
 import cloudSecurity.entity.Category;
+import cloudSecurity.util.IpAnonymization;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -28,8 +30,12 @@ public class AnalyticsService {
     @Inject
     EntityManager entityManager;
 
+    @Inject
+    IpAnonymization ipAnonymization;
+
     /**
      * Records a menu view for analytics.
+     * IP is stored as a one-way hash (anonimizado) for privacy.
      */
     @Transactional
     public void recordMenuView(UUID restaurantId, String ipAddress, String userAgent) {
@@ -38,7 +44,27 @@ public class AnalyticsService {
             return; // Silently fail if restaurant doesn't exist
         }
 
-        MenuView view = new MenuView(restaurant, ipAddress, userAgent);
+        String ipHash = ipAnonymization.hash(ipAddress);
+        MenuView view = new MenuView(restaurant, ipHash, userAgent);
+        view.persist();
+    }
+
+    /**
+     * Records a dish view for "popular dishes" analytics.
+     * Called when the public dish endpoint is hit.
+     */
+    @Transactional
+    public void recordDishView(UUID restaurantId, UUID dishId, String ipAddress, String userAgent) {
+        Restaurant restaurant = Restaurant.findById(restaurantId);
+        if (restaurant == null) {
+            return;
+        }
+        Dish dish = Dish.findById(dishId);
+        if (dish == null || !dish.restaurant.id.equals(restaurantId)) {
+            return;
+        }
+        String ipHash = ipAnonymization.hash(ipAddress);
+        DishView view = new DishView(restaurant, dish, ipHash, userAgent);
         view.persist();
     }
 
@@ -149,51 +175,118 @@ public class AnalyticsService {
     }
 
     /**
-     * Gets popular dishes.
-     * Note: This is a placeholder. For real popularity, we'd need to track dish views.
-     * For now, returns featured dishes or most recently viewed.
+     * Gets popular dishes by view count from dish_views (last 30 days).
+     * Falls back to featured dishes when there are no views.
      */
     private List<AnalyticsDTO.PopularDish> getPopularDishes(UUID restaurantId) {
-        // Get featured dishes as "popular" (placeholder)
-        List<Dish> featuredDishes = Dish.find(
-                "restaurant.id = ?1 and featured = true and available = true and deletedAt is null order by updatedAt desc",
-                restaurantId
-        ).page(0, 10).list();
+        LocalDateTime thirtyDaysAgo = LocalDateTime.now().minusDays(30);
+        List<Object[]> dishCounts = entityManager.createQuery(
+                "SELECT dv.dish.id, COUNT(dv.id) FROM DishView dv " +
+                "WHERE dv.restaurant.id = :restaurantId AND dv.createdAt >= :since " +
+                "GROUP BY dv.dish.id ORDER BY COUNT(dv.id) DESC",
+                Object[].class
+        )
+        .setParameter("restaurantId", restaurantId)
+        .setParameter("since", thirtyDaysAgo)
+        .setMaxResults(10)
+        .getResultList();
 
-        return featuredDishes.stream()
-                .map(dish -> new AnalyticsDTO.PopularDish(
-                        dish.id,
-                        dish.name,
-                        0L, // Placeholder - would need dish view tracking
-                        dish.available
-                ))
-                .collect(Collectors.toList());
+        if (dishCounts.isEmpty()) {
+            // No views yet: return featured dishes with 0 views
+            List<Dish> featuredDishes = Dish.find(
+                    "restaurant.id = ?1 and featured = true and available = true and deletedAt is null order by updatedAt desc",
+                    restaurantId
+            ).page(0, 10).list();
+            return featuredDishes.stream()
+                    .map(dish -> new AnalyticsDTO.PopularDish(dish.id, dish.name, 0L, dish.available))
+                    .collect(Collectors.toList());
+        }
+
+        List<AnalyticsDTO.PopularDish> result = new ArrayList<>();
+        for (Object[] row : dishCounts) {
+            UUID dishId = (UUID) row[0];
+            long views = (Long) row[1];
+            Dish dish = Dish.findById(dishId);
+            if (dish != null && dish.restaurant.id.equals(restaurantId) && dish.deletedAt == null) {
+                result.add(new AnalyticsDTO.PopularDish(dish.id, dish.name, views, dish.available));
+            }
+        }
+        return result;
     }
 
     /**
      * Exports analytics data to CSV format.
+     * Includes both menu views and dish views in a single file, sorted by date.
+     * Columns: Type, Date, Time, IP Hash, User Agent, Dish ID, Dish Name
      */
     public String exportToCSV(UUID restaurantId, LocalDateTime startDate, LocalDateTime endDate) {
-        List<MenuView> views = MenuView.find(
+        LocalDateTime start = startDate != null ? startDate : LocalDateTime.now().minusDays(30);
+        LocalDateTime end = endDate != null ? endDate : LocalDateTime.now();
+
+        List<MenuView> menuViews = MenuView.find(
                 "restaurant.id = ?1 and createdAt >= ?2 and createdAt <= ?3 order by createdAt",
                 restaurantId,
-                startDate != null ? startDate : LocalDateTime.now().minusDays(30),
-                endDate != null ? endDate : LocalDateTime.now()
+                start,
+                end
         ).list();
 
-        StringBuilder csv = new StringBuilder();
-        csv.append("Date,Time,IP Address,User Agent\n");
+        List<DishView> dishViews = DishView.find(
+                "restaurant.id = ?1 and createdAt >= ?2 and createdAt <= ?3 order by createdAt",
+                restaurantId,
+                start,
+                end
+        ).list();
 
-        for (MenuView view : views) {
-            csv.append(String.format("%s,%s,%s,%s\n",
-                    view.createdAt.toLocalDate(),
-                    view.createdAt.toLocalTime(),
-                    view.ipAddress != null ? view.ipAddress : "",
-                    view.userAgent != null ? view.userAgent.replace(",", ";") : ""
+        // Build unified rows (timestamp, type, ip, userAgent, dishId, dishName)
+        List<ExportRow> rows = new ArrayList<>();
+        for (MenuView v : menuViews) {
+            rows.add(new ExportRow(v.createdAt, "menu", v.ipAddress, v.userAgent, null, null));
+        }
+        for (DishView v : dishViews) {
+            String dishName = v.dish != null ? v.dish.name : null;
+            rows.add(new ExportRow(v.createdAt, "dish", v.ipAddress, v.userAgent,
+                    v.dish != null ? v.dish.id.toString() : null, dishName));
+        }
+        rows.sort((a, b) -> a.createdAt.compareTo(b.createdAt));
+
+        StringBuilder csv = new StringBuilder();
+        csv.append("Type,Date,Time,IP Hash,User Agent,Dish ID,Dish Name\n");
+        for (ExportRow row : rows) {
+            csv.append(String.format("%s,%s,%s,%s,%s,%s,%s\n",
+                    row.type,
+                    row.createdAt.toLocalDate(),
+                    row.createdAt.toLocalTime(),
+                    row.ipAddress != null ? row.ipAddress : "",
+                    row.userAgent != null ? escapeCsv(row.userAgent) : "",
+                    row.dishId != null ? row.dishId : "",
+                    row.dishName != null ? escapeCsv(row.dishName) : ""
             ));
         }
-
         return csv.toString();
+    }
+
+    private static String escapeCsv(String value) {
+        if (value == null) return "";
+        String s = value.replace("\"", "\"\"");
+        return s.contains(",") || s.contains("\n") || s.contains("\"") ? "\"" + s + "\"" : s;
+    }
+
+    private static final class ExportRow {
+        final LocalDateTime createdAt;
+        final String type;
+        final String ipAddress;
+        final String userAgent;
+        final String dishId;
+        final String dishName;
+
+        ExportRow(LocalDateTime createdAt, String type, String ipAddress, String userAgent, String dishId, String dishName) {
+            this.createdAt = createdAt;
+            this.type = type;
+            this.ipAddress = ipAddress;
+            this.userAgent = userAgent;
+            this.dishId = dishId;
+            this.dishName = dishName;
+        }
     }
 }
 
