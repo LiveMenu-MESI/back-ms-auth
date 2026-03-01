@@ -15,6 +15,7 @@ API REST del proyecto LiveMenu: autenticación (Keycloak/OIDC), restaurantes, ca
 - [GCP Storage (opcional)](#gcp-storage-opcional)
 - [Mantenimiento y troubleshooting](#mantenimiento-y-troubleshooting)
 - [Desarrollo local](#desarrollo-local)
+- [Documentación de API (OpenAPI)](#documentación-de-api-openapi)
 - [Documentación adicional](#documentación-adicional)
 
 ---
@@ -227,6 +228,19 @@ En local suele usarse `KEYCLOAK_URL=https://localhost:8443` (o la IP del host) y
 
 ---
 
+## Documentación de API (OpenAPI)
+
+La API expone documentación **OpenAPI 3** y **Swagger UI** generadas a partir de los recursos JAX-RS:
+
+| Entorno | OpenAPI (JSON) | Swagger UI |
+|---------|----------------|------------|
+| Local (HTTP) | http://localhost:8080/q/openapi | http://localhost:8080/q/swagger-ui |
+| Producción (HTTPS) | https://tu-dominio:8444/q/openapi | https://tu-dominio:8444/q/swagger-ui |
+
+En desarrollo (`./mvnw quarkus:dev`) están disponibles por defecto. Para producción puedes restringir el acceso a `/q/openapi` y `/q/swagger-ui` por firewall o proxy si no quieres exponerlos.
+
+---
+
 ## Documentación adicional
 
 Documentos en el repositorio para configuración y troubleshooting en producción:
@@ -239,7 +253,6 @@ Explica por qué el login puede hacer timeout cuando livemenu y Keycloak corren 
 - Uso de `KEYCLOAK_URL=https://keycloak:8443` y `KC_HOSTNAME=keycloak` para que el token endpoint sea accesible desde livemenu.
 - Checklist de variables y comprobaciones.
 - Sección de **certificado HTTPS** para el API (keystore con `*.dominio` y sin localhost).
-- Qué hacer si el login funciona en otro PC pero no en el servidor.
 
 ### [compose/HTTPS-LETSENCRYPT.md](compose/HTTPS-LETSENCRYPT.md)
 
@@ -256,6 +269,11 @@ Pasos para que el navegador confíe en la API (evitar `ERR_CERT_AUTHORITY_INVALI
 **Google Cloud Storage (subida de imágenes).**  
 Configuración de GCP Storage con cuenta de servicio para la funcionalidad de imágenes (CU-05): cuenta de servicio, bucket y variables de entorno (`GCP_STORAGE_BUCKET_NAME`, `GOOGLE_APPLICATION_CREDENTIALS`). Opcional; la API arranca sin GCP si no se configuran.
 
+### [docs/HIBERNATE.md](docs/HIBERNATE.md)
+
+**Hibernate ORM y persistencia.**  
+Configuración del datasource, estrategia de esquema (`HIBERNATE_SCHEMA_STRATEGY`), entidades (Restaurant, Category, Dish, MenuView, DishView), relaciones y uso de JSON/JSONB. Incluye notas sobre migraciones versionadas (Flyway/Liquibase) para producción.
+
 ### Scripts de utilidad
 
 | Script | Uso |
@@ -269,8 +287,9 @@ Configuración de GCP Storage con cuenta de servicio para la funcionalidad de im
 |---------|-------------|
 | `compose/.env.example` | Plantilla de variables para el Compose (copiar a `.env` y rellenar). |
 | `compose/docker-compose.yml` | Definición de servicios Postgres, Keycloak y livemenu. |
-| `src/main/resources/application.properties` | Configuración de la app (BD, Keycloak, HTTPS, CORS, GCP). |
+| `src/main/resources/application.properties` | Configuración de la app (BD, Keycloak, HTTPS, CORS, GCP, OpenAPI). |
 | `src/main/resources/application-prod.properties` | Overrides en perfil prod (TLS registry para HTTPS con TLS 1.2/1.3). |
+| `docs/HIBERNATE.md` | Documentación de Hibernate: esquema, entidades y estrategia de BD. |
 
 ---
 
