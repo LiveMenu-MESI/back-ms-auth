@@ -47,10 +47,10 @@ services:
     command: start --optimized --import-realm
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8080/health/ready || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 15
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/8080 || exit 1"]
+      interval: 1s
+      timeout: 1s
+      retries: 5
       start_period: 45s
 
   livemenu:
@@ -65,22 +65,18 @@ services:
       DB_URL: jdbc:postgresql://postgres:5432/livemenu
       DB_USER: livemenu
       DB_PASSWORD: ${DB_PASSWORD}
-      KEYCLOAK_URL: http://keycloak:8080
-      KEYCLOAK_REALM: ${KEYCLOAK_REALM:-livemenu}
-      OIDC_CLIENT_ID: ${OIDC_CLIENT_ID:-livemenu-backend}
+      KEYCLOAK_URL: ${KEYCLOAK_URL}
       OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET}
-      KEYCLOAK_ADMIN_CLIENT_ID: ${KEYCLOAK_ADMIN_CLIENT_ID:-backend-admin}
       KEYCLOAK_ADMIN_CLIENT_SECRET: ${KEYCLOAK_ADMIN_CLIENT_SECRET}
       KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
       KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
-      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:8080}
       HIBERNATE_SCHEMA_STRATEGY: ${HIBERNATE_SCHEMA_STRATEGY:-update}
       # GCP Storage (optional: set GCP_CREDENTIALS_FILE and GCP_STORAGE_BUCKET_NAME to enable image upload)
       GOOGLE_APPLICATION_CREDENTIALS: /app/config/gcp-credentials.json
       GCP_STORAGE_BUCKET_NAME: ${GCP_STORAGE_BUCKET_NAME:-}
     volumes:
       # Mount service account JSON for GCP Storage (path on host from .env, e.g. ./gcp-credentials.json)
-      - ${GCP_CREDENTIALS_FILE:-./gcp-credentials.json}:/app/config/gcp-credentials.json:ro
+      - ${GCP_CREDENTIALS_FILE:-/home/juaesm/secure/gcp.json}:/app/config/gcp-credentials.json:ro
     ports:
       - "8080:8080"
     depends_on:

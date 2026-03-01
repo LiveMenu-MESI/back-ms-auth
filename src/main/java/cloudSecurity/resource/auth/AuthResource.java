@@ -9,6 +9,7 @@ import cloudSecurity.service.auth.TokenService;
 import java.util.Map;
 
 import io.quarkus.oidc.client.OidcClient;
+import io.quarkus.oidc.client.OidcClients;
 import io.smallrye.mutiny.Uni;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
@@ -34,7 +35,7 @@ import jakarta.ws.rs.core.Response;
 public class AuthResource {
 
     @Inject
-    OidcClient oidcClient;
+    OidcClients oidcClients;
     @Inject
     SessionService sessionService;
     @Inject
@@ -108,7 +109,8 @@ public class AuthResource {
     @POST
     @Path("/login")
     public Uni<Response> login(LoginRequest req) {
-        return oidcClient.getTokens(Map.of(
+        OidcClient authClient = oidcClients.getClient("auth");
+        return authClient.getTokens(Map.of(
                         "username", req.email(),
                         "password", req.password()))
                 .onItem().transform(tokens -> {
@@ -163,7 +165,8 @@ public class AuthResource {
                     .build());
         }
 
-        return oidcClient.refreshTokens(refreshToken)
+        OidcClient authClient = oidcClients.getClient("auth");
+        return authClient.refreshTokens(refreshToken)
                 .onItem().transform(tokens -> {
                     String newAccessToken = tokens.getAccessToken();
                     String newRefreshToken = tokens.getRefreshToken();
