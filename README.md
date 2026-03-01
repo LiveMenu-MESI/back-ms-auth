@@ -15,6 +15,7 @@ API REST del proyecto LiveMenu: autenticación (Keycloak/OIDC), restaurantes, ca
 - [GCP Storage (opcional)](#gcp-storage-opcional)
 - [Mantenimiento y troubleshooting](#mantenimiento-y-troubleshooting)
 - [Desarrollo local](#desarrollo-local)
+- [CI (GitHub Actions)](#ci-github-actions)
 - [Documentación de API (OpenAPI)](#documentación-de-api-openapi)
 - [Documentación adicional](#documentación-adicional)
 
@@ -228,6 +229,19 @@ En local suele usarse `KEYCLOAK_URL=https://localhost:8443` (o la IP del host) y
 
 ---
 
+## CI (GitHub Actions)
+
+El repositorio incluye un flujo de CI en [.github/workflows/ci.yml](.github/workflows/ci.yml) que se ejecuta en cada *push* y en cada *pull request* a `main` o `master`:
+
+| Paso | Descripción |
+|------|-------------|
+| **build-and-test** | Checkout, JDK 17 (Eclipse Temurin), caché Maven, `./mvnw verify` (unit tests; integration tests omitidos con `-DskipITs=true`). |
+| **docker-build** | Tras pasar los tests, construye la imagen con `Dockerfile.jvm.multi` para comprobar que el Dockerfile y el contexto de build son válidos (no se hace push a ningún registro). |
+
+Para que el CI se ejecute, el repo debe estar en GitHub y el workflow en la rama por defecto. En GitLab se puede replicar la lógica con `.gitlab-ci.yml` (build Maven + build Docker).
+
+---
+
 ## Documentación de API (OpenAPI)
 
 La API expone documentación **OpenAPI 3** y **Swagger UI** generadas a partir de los recursos JAX-RS:
@@ -296,6 +310,7 @@ Configuración del datasource, estrategia de esquema (`HIBERNATE_SCHEMA_STRATEGY
 | `src/main/resources/application-prod.properties` | Overrides en perfil prod (TLS registry para HTTPS con TLS 1.2/1.3). |
 | `docs/HIBERNATE.md` | Documentación de Hibernate: esquema, entidades y estrategia de BD. |
 | `docs/ARCHITECTURE.md` | Diagramas de arquitectura del backend (Mermaid). |
+| `.github/workflows/ci.yml` | CI: build Maven, tests unitarios y build de la imagen Docker. |
 
 ---
 
