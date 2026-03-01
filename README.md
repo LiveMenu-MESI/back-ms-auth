@@ -243,7 +243,12 @@ En desarrollo (`./mvnw quarkus:dev`) están disponibles por defecto. Para produc
 
 ## Documentación adicional
 
-Documentos en el repositorio para configuración y troubleshooting en producción:
+Documentos en el repositorio para configuración, arquitectura y troubleshooting:
+
+### [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+
+**Diagramas de arquitectura (backend).**  
+Componentes, flujos de autenticación, gestión de menú, vista pública, modelo de datos (ER), despliegue con Docker Compose, procesamiento de imágenes y seguridad. Formato Mermaid (GitHub/GitLab y editores con soporte Mermaid).
 
 ### [compose/CONFIG-LOGIN-DOCKER.md](compose/CONFIG-LOGIN-DOCKER.md)
 
@@ -290,6 +295,7 @@ Configuración del datasource, estrategia de esquema (`HIBERNATE_SCHEMA_STRATEGY
 | `src/main/resources/application.properties` | Configuración de la app (BD, Keycloak, HTTPS, CORS, GCP, OpenAPI). |
 | `src/main/resources/application-prod.properties` | Overrides en perfil prod (TLS registry para HTTPS con TLS 1.2/1.3). |
 | `docs/HIBERNATE.md` | Documentación de Hibernate: esquema, entidades y estrategia de BD. |
+| `docs/ARCHITECTURE.md` | Diagramas de arquitectura del backend (Mermaid). |
 
 ---
 
