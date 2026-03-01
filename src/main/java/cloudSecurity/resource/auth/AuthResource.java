@@ -1,6 +1,7 @@
 package cloudSecurity.resource.auth;
 
 import cloudSecurity.resource.BaseResource;
+import cloudSecurity.service.auth.AuthOidcClientProvider;
 import cloudSecurity.service.auth.KeycloakAdminService;
 import cloudSecurity.service.auth.KeycloakIntrospectionService;
 import cloudSecurity.service.auth.SessionService;
@@ -8,8 +9,6 @@ import cloudSecurity.service.auth.TokenService;
 
 import java.util.Map;
 
-import io.quarkus.oidc.client.OidcClient;
-import io.quarkus.oidc.client.OidcClients;
 import io.smallrye.mutiny.Uni;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
@@ -35,7 +34,7 @@ import jakarta.ws.rs.core.Response;
 public class AuthResource {
 
     @Inject
-    OidcClients oidcClients;
+    AuthOidcClientProvider authOidcClientProvider;
     @Inject
     SessionService sessionService;
     @Inject
@@ -109,10 +108,10 @@ public class AuthResource {
     @POST
     @Path("/login")
     public Uni<Response> login(LoginRequest req) {
-        OidcClient authClient = oidcClients.getClient("auth");
-        return authClient.getTokens(Map.of(
+        return authOidcClientProvider.getAuthClient()
+                .onItem().transformToUni(authClient -> authClient.getTokens(Map.of(
                         "username", req.email(),
-                        "password", req.password()))
+                        "password", req.password())))
                 .onItem().transform(tokens -> {
                     String accessToken = tokens.getAccessToken();
                     String refreshToken = tokens.getRefreshToken();
@@ -165,8 +164,8 @@ public class AuthResource {
                     .build());
         }
 
-        OidcClient authClient = oidcClients.getClient("auth");
-        return authClient.refreshTokens(refreshToken)
+        return authOidcClientProvider.getAuthClient()
+                .onItem().transformToUni(authClient -> authClient.refreshTokens(refreshToken))
                 .onItem().transform(tokens -> {
                     String newAccessToken = tokens.getAccessToken();
                     String newRefreshToken = tokens.getRefreshToken();

@@ -32,6 +32,10 @@ nb-configuration.xml
 *.swp
 *.swo
 
+# HTTPS keystore (do not commit)
+compose/config/keystore.p12
+*.p12
+
 # patch
 *.orig
 *.rej

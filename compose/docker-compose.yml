@@ -74,11 +74,21 @@ services:
       # GCP Storage (optional: set GCP_CREDENTIALS_FILE and GCP_STORAGE_BUCKET_NAME to enable image upload)
       GOOGLE_APPLICATION_CREDENTIALS: /app/config/gcp-credentials.json
       GCP_STORAGE_BUCKET_NAME: ${GCP_STORAGE_BUCKET_NAME:-}
+      # HTTPS: keystore mounted at /app/config/keystore.p12 (set HTTPS_ENABLED=true in .env)
+      HTTPS_ENABLED: ${HTTPS_ENABLED:-false}
+      HTTPS_PORT: ${HTTPS_PORT:-8443}
+      HTTPS_KEYSTORE_FILE: ${HTTPS_KEYSTORE_FILE:-/app/config/keystore.p12}
+      HTTPS_KEYSTORE_PASSWORD: ${HTTPS_KEYSTORE_PASSWORD:-changeit}
+      HTTPS_INSECURE_REQUESTS: ${HTTPS_INSECURE_REQUESTS:-enabled}
     volumes:
       # Mount service account JSON for GCP Storage (path on host from .env, e.g. ./gcp-credentials.json)
       - ${GCP_CREDENTIALS_FILE:-/home/juaesm/secure/gcp.json}:/app/config/gcp-credentials.json:ro
+      # HTTPS keystore (compose/config/keystore.p12 when HTTPS_ENABLED=true)
+      - ./config/keystore.p12:/app/config/keystore.p12:ro
     ports:
-      - "8080:8080"
+      - "${LIVEMENU_PORT:-8081}:8080"
+      # Host port 8444 to avoid conflict with Keycloak (8180/8443); container listens on 8443
+      - "${LIVEMENU_HTTPS_PORT:-8444}:8443"
     depends_on:
       postgres:
         condition: service_healthy

@@ -1,12 +1,7 @@
 package cloudSecurity.service.auth;
 
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.ws.rs.client.Client;
-import jakarta.ws.rs.client.ClientBuilder;
-import jakarta.ws.rs.client.Entity;
-import jakarta.ws.rs.core.Form;
-import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
+import jakarta.inject.Inject;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.nio.charset.StandardCharsets;
@@ -34,8 +29,11 @@ public class TokenService {
     @ConfigProperty(name = "quarkus.oidc.client-id")
     String clientId;
 
-    @ConfigProperty(name = "quarkus.oidc.credentials.secret")
+    @ConfigProperty(name = "quarkus.oidc.credentials.secret", defaultValue = "")
     String clientSecret;
+
+    @Inject
+    KeycloakHttpClientProvider keycloakHttpClientProvider;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -144,27 +142,18 @@ public class TokenService {
      * Returns null if token is not active or user info cannot be extracted.
      */
     private CurrentUser extractCurrentUserFromIntrospection(String accessToken) {
-        Client client = ClientBuilder.newClient();
         try {
             String basic = Base64.getEncoder().encodeToString((clientId + ":" + clientSecret).getBytes(StandardCharsets.UTF_8));
-            Form form = new Form().param("token", accessToken);
-
-            Response res = client.target(getIntrospectUrl())
-                    .request(MediaType.APPLICATION_JSON)
-                    .header("Authorization", "Basic " + basic)
-                    .post(Entity.entity(form, MediaType.APPLICATION_FORM_URLENCODED_TYPE));
-
-            String body = res.readEntity(String.class);
-            if (res.getStatus() != 200) {
+            KeycloakHttpClientProvider.KeycloakResponse res = keycloakHttpClientProvider.postForm(
+                    getIntrospectUrl(), Map.of("token", accessToken), basic);
+            if (res.statusCode() != 200) {
                 return null;
             }
-
             @SuppressWarnings("unchecked")
-            Map<String, Object> json = objectMapper.readValue(body, Map.class);
+            Map<String, Object> json = objectMapper.readValue(res.body(), Map.class);
             if (!Boolean.TRUE.equals(json.get("active"))) {
                 return null;
             }
-
             Object subObj = json.get("sub");
             String id = subObj != null ? subObj.toString() : null;
             String email = (String) json.get("email");
@@ -184,8 +173,6 @@ public class TokenService {
         } catch (Exception e) {
             Log.debugf("Error in introspection: %s", e.getMessage());
             return null;
-        } finally {
-            client.close();
         }
     }
 
@@ -206,29 +193,19 @@ public class TokenService {
         if (accessToken == null || accessToken.isBlank()) {
             return false;
         }
-
-        Client client = ClientBuilder.newClient();
         try {
-            String basic = Base64.getEncoder().encodeToString((clientId + ":" + clientSecret).getBytes(java.nio.charset.StandardCharsets.UTF_8));
-            Form form = new Form().param("token", accessToken);
-
-            Response res = client.target(getIntrospectUrl())
-                    .request(MediaType.APPLICATION_JSON)
-                    .header("Authorization", "Basic " + basic)
-                    .post(Entity.entity(form, MediaType.APPLICATION_FORM_URLENCODED_TYPE));
-
-            String body = res.readEntity(String.class);
-            if (res.getStatus() != 200) {
+            String basic = Base64.getEncoder().encodeToString((clientId + ":" + clientSecret).getBytes(StandardCharsets.UTF_8));
+            KeycloakHttpClientProvider.KeycloakResponse res = keycloakHttpClientProvider.postForm(
+                    getIntrospectUrl(), Map.of("token", accessToken), basic);
+            if (res.statusCode() != 200) {
                 return false;
             }
             @SuppressWarnings("unchecked")
-            Map<String, Object> json = objectMapper.readValue(body, Map.class);
+            Map<String, Object> json = objectMapper.readValue(res.body(), Map.class);
             return Boolean.TRUE.equals(json.get("active"));
         } catch (Exception e) {
             Log.debugf("Error validating token: %s", e.getMessage());
             return false;
-        } finally {
-            client.close();
         }
     }
 

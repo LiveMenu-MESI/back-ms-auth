@@ -2,12 +2,9 @@ package cloudSecurity.service.auth;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import jakarta.ws.rs.client.*;
-import jakarta.ws.rs.core.Form;
-import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -53,46 +50,43 @@ public class KeycloakAdminService {
     @Inject
     ObjectMapper objectMapper;
 
+    @Inject
+    KeycloakHttpClientProvider keycloakHttpClientProvider;
+
     private static final int KEYCLOAK_CALL_TIMEOUT_SEC = 15;
     private static final ExecutorService EXECUTOR = Executors.newCachedThreadPool();
 
     private void obtainAdminToken() {
-        Client client = ClientBuilder.newClient();
         try {
-            Form form;
+            Map<String, String> formParams;
             String tokenRealm;
             if (adminUsername != null && !adminUsername.isBlank()) {
                 tokenRealm = "master";
-                form = new Form()
-                        .param("grant_type", "password")
-                        .param("client_id", "admin-cli")
-                        .param("username", adminUsername)
-                        .param("password", adminPassword);
+                formParams = new LinkedHashMap<>();
+                formParams.put("grant_type", "password");
+                formParams.put("client_id", "admin-cli");
+                formParams.put("username", adminUsername);
+                formParams.put("password", adminPassword);
             } else {
                 tokenRealm = realm;
-                form = new Form()
-                        .param("grant_type", "client_credentials")
-                        .param("client_id", adminClientId)
-                        .param("client_secret", adminClientSecret);
+                formParams = new LinkedHashMap<>();
+                formParams.put("grant_type", "client_credentials");
+                formParams.put("client_id", adminClientId);
+                formParams.put("client_secret", adminClientSecret);
             }
 
-            Response res = client.target(getTokenUrl(tokenRealm))
-                    .request(MediaType.APPLICATION_FORM_URLENCODED)
-                    .post(Entity.form(form));
-
-            String body = res.readEntity(String.class);
-            if (res.getStatus() != 200) {
-                throw new RuntimeException("Keycloak token error: " + res.getStatus() + " " + body);
+            KeycloakHttpClientProvider.KeycloakResponse res = keycloakHttpClientProvider.postForm(
+                    getTokenUrl(tokenRealm), formParams, null);
+            if (res.statusCode() != 200) {
+                throw new RuntimeException("Keycloak token error: " + res.statusCode() + " " + res.body());
             }
             @SuppressWarnings("unchecked")
-            Map<String, Object> json = objectMapper.readValue(body, Map.class);
+            Map<String, Object> json = objectMapper.readValue(res.body(), Map.class);
             adminToken = (String) json.get("access_token");
         } catch (RuntimeException e) {
             throw e;
         } catch (Exception e) {
             throw new RuntimeException(e);
-        } finally {
-            client.close();
         }
     }
 
@@ -119,7 +113,6 @@ public class KeycloakAdminService {
             }
         }
 
-        Client client = ClientBuilder.newClient();
         try {
             ObjectNode user = objectMapper.createObjectNode()
                     .put("username", email)
@@ -137,58 +130,41 @@ public class KeycloakAdminService {
 
             String jsonBody = objectMapper.writeValueAsString(user);
 
-            Response res = client.target(getUsersUrl())
-                    .request(MediaType.APPLICATION_JSON)
-                    .header("Authorization", "Bearer " + adminToken)
-                    .post(Entity.entity(jsonBody, MediaType.APPLICATION_JSON_TYPE));
+            KeycloakHttpClientProvider.KeycloakResponse res = keycloakHttpClientProvider.postJson(
+                    getUsersUrl(), jsonBody, adminToken);
 
-            // If token expired (401), refresh and retry once
-            if (res.getStatus() == 401) {
+            if (res.statusCode() == 401) {
                 synchronized (this) {
-                    adminToken = null; // Clear expired token
-                    obtainAdminToken(); // Get new token
+                    adminToken = null;
+                    obtainAdminToken();
                 }
-                // Retry with new token
-                res.close();
-                res = client.target(getUsersUrl())
-                        .request(MediaType.APPLICATION_JSON)
-                        .header("Authorization", "Bearer " + adminToken)
-                        .post(Entity.entity(jsonBody, MediaType.APPLICATION_JSON_TYPE));
+                res = keycloakHttpClientProvider.postJson(getUsersUrl(), jsonBody, adminToken);
             }
 
-            if (res.getStatus() == 409) {
-                String errorBody = res.readEntity(String.class);
+            if (res.statusCode() == 409) {
                 throw new RuntimeException("Email already registered");
             }
-            if (res.getStatus() >= 400) {
-                String errorBody = res.readEntity(String.class);
-                // Try to extract a meaningful error message
+            if (res.statusCode() >= 400) {
                 String errorMessage = "Failed to create user";
                 try {
-                    if (errorBody != null && !errorBody.isBlank()) {
-                        // Try to parse as JSON to get error message
-                        Map<String, Object> errorJson = objectMapper.readValue(errorBody, Map.class);
+                    if (res.body() != null && !res.body().isBlank()) {
+                        Map<String, Object> errorJson = objectMapper.readValue(res.body(), Map.class);
                         Object errorObj = errorJson.get("error");
                         if (errorObj != null) {
                             errorMessage = errorObj.toString();
                         } else {
-                            errorMessage = errorBody;
+                            errorMessage = res.body();
                         }
                     }
                 } catch (Exception e) {
-                    // If parsing fails, use the raw body or default message
-                    errorMessage = errorBody != null && !errorBody.isBlank() ? errorBody : errorMessage;
+                    errorMessage = res.body() != null && !res.body().isBlank() ? res.body() : errorMessage;
                 }
                 throw new RuntimeException(errorMessage);
             }
-            // Do not PUT the user after creation: sending user without credentials clears the password in Keycloak.
         } catch (RuntimeException e) {
             throw e;
         } catch (Exception e) {
             throw new RuntimeException("Failed to create user: " + e.getMessage(), e);
-        } finally {
-            client.close();
         }
     }
 }
-
