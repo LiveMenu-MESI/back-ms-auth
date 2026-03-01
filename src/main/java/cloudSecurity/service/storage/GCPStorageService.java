@@ -25,7 +25,7 @@ import io.quarkus.logging.Log;
 @ApplicationScoped
 public class GCPStorageService {
 
-    @ConfigProperty(name = "gcp.storage.bucket.name")
+    @ConfigProperty(name = "gcp.storage.bucket.name", defaultValue = "")
     String bucketName;
 
     @ConfigProperty(name = "gcp.storage.credentials.path", defaultValue = "")
@@ -114,6 +114,9 @@ public class GCPStorageService {
      * @return Public URL for the object
      */
     public String getPublicUrl(String objectPath) {
+        if (bucketName == null || bucketName.isBlank()) {
+            return "";
+        }
         return String.format("https://storage.googleapis.com/%s/%s", bucketName, objectPath);
     }
 

@@ -69,6 +69,12 @@ services:
       KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
       PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:8080}
       HIBERNATE_SCHEMA_STRATEGY: ${HIBERNATE_SCHEMA_STRATEGY:-update}
+      # GCP Storage (optional: set GCP_CREDENTIALS_FILE and GCP_STORAGE_BUCKET_NAME to enable image upload)
+      GOOGLE_APPLICATION_CREDENTIALS: /app/config/gcp-credentials.json
+      GCP_STORAGE_BUCKET_NAME: ${GCP_STORAGE_BUCKET_NAME:-}
+    volumes:
+      # Mount service account JSON for GCP Storage (path on host from .env, e.g. ./gcp-credentials.json)
+      - ${GCP_CREDENTIALS_FILE:-./gcp-credentials.json}:/app/config/gcp-credentials.json:ro
     ports:
       - "8080:8080"
     depends_on:
