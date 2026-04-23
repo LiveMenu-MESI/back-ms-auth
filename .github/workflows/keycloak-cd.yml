@@ -1,0 +1,103 @@
+# CD de la imagen Keycloak personalizada (realm livemenu pre-importado)
+# Solo se ejecuta cuando cambia el Dockerfile o el realm JSON
+# No necesita tests — es una imagen de configuración
+
+name: CD Keycloak
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - "containers/keycloak/**"
+
+env:
+  GCP_REGION:     ${{ secrets.GCP_REGION }}
+  GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  IMAGE_NAME:     ${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/livemenu/keycloak
+
+jobs:
+  build-and-deploy-keycloak:
+    name: Build Keycloak + Trivy + Deploy
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+      security-events: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configurar Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Autenticación en GCP (Workload Identity Federation)
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
+
+      - name: Configurar gcloud CLI
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Login a Artifact Registry
+        run: gcloud auth configure-docker ${{ env.GCP_REGION }}-docker.pkg.dev --quiet
+
+      - name: Build imagen Keycloak
+        uses: docker/build-push-action@v6
+        with:
+          context: containers/keycloak
+          file: containers/keycloak/Dockerfile
+          push: false
+          tags: |
+            ${{ env.IMAGE_NAME }}:${{ github.sha }}
+            ${{ env.IMAGE_NAME }}:latest
+          load: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Trivy — Escaneo Keycloak (tabla)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.IMAGE_NAME }}:${{ github.sha }}
+          format: table
+          exit-code: "0"
+          ignore-unfixed: true
+          severity: "CRITICAL,HIGH,MEDIUM"
+
+      - name: Trivy — Bloquear si hay Critical o High
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.IMAGE_NAME }}:${{ github.sha }}
+          format: sarif
+          output: trivy-keycloak-results.sarif
+          exit-code: "1"
+          ignore-unfixed: true
+          severity: "CRITICAL,HIGH"
+
+      - name: Subir resultados Trivy a GitHub Security
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-keycloak-results.sarif
+          category: trivy-keycloak
+
+      - name: Push Keycloak a Artifact Registry
+        if: success()
+        uses: docker/build-push-action@v6
+        with:
+          context: containers/keycloak
+          file: containers/keycloak/Dockerfile
+          push: true
+          tags: |
+            ${{ env.IMAGE_NAME }}:${{ github.sha }}
+            ${{ env.IMAGE_NAME }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Deploy Keycloak a Cloud Run
+        if: success()
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          service: livemenu-keycloak
+          region: ${{ env.GCP_REGION }}
+          image: ${{ env.IMAGE_NAME }}:${{ github.sha }}

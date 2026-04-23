@@ -28,8 +28,8 @@ public class GCPStorageService {
     @ConfigProperty(name = "gcp.storage.bucket.name", defaultValue = "")
     String bucketName;
 
-    @ConfigProperty(name = "gcp.storage.credentials.path", defaultValue = "")
-    String credentialsPath;
+    @ConfigProperty(name = "gcp.storage.credentials.path")
+    Optional<String> credentialsPath;
 
     private Storage storage;
     private boolean initialized = false;
@@ -46,23 +46,27 @@ public class GCPStorageService {
 
         try {
             GoogleCredentials credentials = null;
+            String path = credentialsPath.orElse("");
 
-                Log.infof("Loading GCP credentials from GOOGLE_APPLICATION_CREDENTIALS: %s", credentialsPath);
-                if (credentialsPath != null && !credentialsPath.isBlank()) {
-                    if (Files.exists(Paths.get(credentialsPath))) {
-                        try (FileInputStream serviceAccountStream = new FileInputStream(credentialsPath)) {
-                            credentials = GoogleCredentials.fromStream(serviceAccountStream)
-                                    .createScoped("https://www.googleapis.com/auth/cloud-platform");
-                        }
-                    } else {
-                        Log.warnf("Credentials file not found at GOOGLE_APPLICATION_CREDENTIALS path: %s", credentialsPath);
+            Log.infof("Loading GCP credentials from path: %s", path.isBlank() ? "(ADC)" : path);
+            if (!path.isBlank()) {
+                if (Files.exists(Paths.get(path))) {
+                    try (FileInputStream serviceAccountStream = new FileInputStream(path)) {
+                        credentials = GoogleCredentials.fromStream(serviceAccountStream)
+                                .createScoped("https://www.googleapis.com/auth/cloud-platform");
                     }
+                } else {
+                    Log.warnf("Credentials file not found at path: %s — using ADC", path);
                 }
+            }
 
-            storage = StorageOptions.newBuilder()
-                    .setCredentials(credentials)
-                    .build()
-                    .getService();
+            // setCredentials(null) usa NoCredentials (anónimo), por eso no se llama
+            // cuando credentials es null — el builder usa ADC del entorno (Cloud Run SA)
+            StorageOptions.Builder storageBuilder = StorageOptions.newBuilder();
+            if (credentials != null) {
+                storageBuilder.setCredentials(credentials);
+            }
+            storage = storageBuilder.build().getService();
 
             initialized = true;
             Log.infof("Google Cloud Storage client initialized successfully. Bucket: %s", bucketName);

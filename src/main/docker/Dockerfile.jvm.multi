@@ -12,18 +12,22 @@ RUN mvn dependency:go-offline -B -q || true
 COPY src src
 RUN mvn package -DskipTests -B -q
 
-# Stage 2: runtime
-FROM registry.access.redhat.com/ubi9/openjdk-17:1.23
-ENV LANGUAGE='en_US:en'
+# Stage 2: runtime — eclipse-temurin:17-jre-alpine (imagen ligera, solo JRE)
+# Alpine reduce la superficie de ataque vs UBI9; Adoptium es la distribución
+# de referencia para JVM en entornos productivos.
+FROM eclipse-temurin:17-jre-alpine
 
-COPY --from=builder --chown=185 /build/target/quarkus-app/lib/ /deployments/lib/
-COPY --from=builder --chown=185 /build/target/quarkus-app/*.jar /deployments/
-COPY --from=builder --chown=185 /build/target/quarkus-app/app/ /deployments/app/
-COPY --from=builder --chown=185 /build/target/quarkus-app/quarkus/ /deployments/quarkus/
+# Usuario no-root con UID fijo (compatible con Kubernetes/Cloud Run restrictive policies)
+RUN addgroup -S quarkus && adduser -S -u 185 -G quarkus quarkus
+
+COPY --from=builder --chown=185:quarkus /build/target/quarkus-app/lib/ /deployments/lib/
+COPY --from=builder --chown=185:quarkus /build/target/quarkus-app/*.jar /deployments/
+COPY --from=builder --chown=185:quarkus /build/target/quarkus-app/app/ /deployments/app/
+COPY --from=builder --chown=185:quarkus /build/target/quarkus-app/quarkus/ /deployments/quarkus/
 
 EXPOSE 8080
 USER 185
-ENV JAVA_OPTS_APPEND="-Dquarkus.http.host=0.0.0.0 -Djava.util.logging.manager=org.jboss.logmanager.LogManager"
+ENV JAVA_OPTS="-Dquarkus.http.host=0.0.0.0 -Djava.util.logging.manager=org.jboss.logmanager.LogManager"
 ENV JAVA_APP_JAR="/deployments/quarkus-run.jar"
 
-ENTRYPOINT [ "/opt/jboss/container/java/run/run-java.sh" ]
+ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -jar $JAVA_APP_JAR"]

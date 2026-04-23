@@ -36,6 +36,11 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-hibernate-orm-panache</artifactId>
         </dependency>
+        <!-- Flyway: migraciones versionadas de base de datos -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-flyway</artifactId>
+        </dependency>
         <!-- JDBC driver dependencies -->
         <dependency>
             <groupId>io.quarkus</groupId>

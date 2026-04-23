@@ -3,6 +3,8 @@ FROM quay.io/keycloak/keycloak:latest AS builder
 ENV KC_HEALTH_ENABLED=true
 ENV KC_METRICS_ENABLED=true
 ENV KC_DB=postgres
+# Debe estar antes de kc.sh build — en --optimized mode se hornea en la imagen
+ENV KC_PROXY_HEADERS=xforwarded
 
 WORKDIR /opt/keycloak
 
@@ -24,3 +26,4 @@ COPY --from=builder /opt/keycloak/ /opt/keycloak/
 COPY realm/livemenu-realm.json /opt/keycloak/data/import/
 
 ENTRYPOINT ["/opt/keycloak/bin/kc.sh"]
+CMD ["start", "--optimized", "--import-realm"]

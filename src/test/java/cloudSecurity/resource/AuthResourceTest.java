@@ -1,10 +1,14 @@
 package cloudSecurity.resource;
 
 import cloudSecurity.base.BaseResourceTest;
+import cloudSecurity.service.auth.KeycloakAdminService;
 import cloudSecurity.service.auth.TokenService;
+import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusMock;
 import io.restassured.http.ContentType;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 import java.util.Map;
 
@@ -18,6 +22,17 @@ import static org.mockito.Mockito.when;
  * Tests for AuthResource endpoints.
  */
 public class AuthResourceTest extends BaseResourceTest {
+
+    @InjectMock
+    KeycloakAdminService keycloakAdmin;
+
+    @BeforeEach
+    @Override
+    public void setUp() {
+        super.setUp();
+        // Evitar llamadas reales a Keycloak en tests de registro
+        Mockito.doNothing().when(keycloakAdmin).createUser(anyString(), anyString());
+    }
 
     @Test
     public void testRegister_Success() {

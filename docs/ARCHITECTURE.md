@@ -361,3 +361,94 @@ Los diagramas están en **Mermaid** y se renderizan en:
 ### Relación con el código
 - Entidades y tablas: [docs/HIBERNATE.md](HIBERNATE.md).
 - Despliegue y variables: [README.md](../README.md) y [compose/CONFIG-LOGIN-DOCKER.md](../compose/CONFIG-LOGIN-DOCKER.md).
+
+---
+
+## Arquitectura GCP — Producción (Entrega 2)
+
+Despliegue en Google Cloud Platform. IaC gestionado con Terraform (directorio `terraform/`).
+
+```mermaid
+graph TB
+    subgraph "Usuario final"
+        U[Browser / App]
+    end
+
+    subgraph "DNS"
+        CF[Cloudflare DNS<br/>DNS-only — sin proxy]
+    end
+
+    subgraph "GCP — Red perimetral"
+        LB[Cloud Load Balancer<br/>HTTPS · IP 34.128.181.28<br/>Cert SSL Google-managed]
+        WAF[Cloud Armor WAF<br/>OWASP Top 10 · Rate Limiting<br/>3 políticas por backend]
+    end
+
+    subgraph "GCP — Cómputo serverless"
+        FE[Cloud Run<br/>livemenu-frontend<br/>nginx:alpine · SPA Angular]
+        BE[Cloud Run<br/>livemenu-backend<br/>eclipse-temurin:17-jre-alpine · Quarkus]
+        KC[Cloud Run<br/>livemenu-keycloak<br/>Keycloak 26 · OIDC/OAuth2]
+    end
+
+    subgraph "GCP — Datos"
+        DB[(Cloud SQL PostgreSQL 15<br/>REGIONAL · HA · PITR<br/>15 backups · private IP)]
+        GCS[(GCS Bucket<br/>livemenu-images<br/>AES-256 · versionado · público-lectura)]
+    end
+
+    subgraph "GCP — Seguridad y CI/CD"
+        SM[Secret Manager<br/>6 secretos · rotación 30d<br/>Pub/Sub notification]
+        AR[Artifact Registry<br/>Container Scanning activo<br/>backend · frontend · keycloak]
+        WIF[Workload Identity Federation<br/>GitHub Actions → GCP<br/>sin service account keys]
+    end
+
+    subgraph "GCP — Red interna"
+        VPC[VPC livemenu-vpc<br/>+ VPC Connector e2-micro]
+    end
+
+    subgraph "CI/CD"
+        GH[GitHub Actions<br/>Build · Trivy · Push · Deploy<br/>bloquea Critical/High CVEs]
+    end
+
+    U -->|HTTPS| CF
+    CF -->|A record| LB
+    LB --> WAF
+    WAF -->|livemenu.naing.co| FE
+    WAF -->|api.livemenu.naing.co| BE
+    WAF -->|keycloak.livemenu.naing.co| KC
+    BE -->|VPC Connector · private IP| DB
+    KC -->|VPC Connector · private IP| DB
+    BE -->|ADC · IAM objectAdmin| GCS
+    BE -->|Secret Manager refs| SM
+    KC -->|Secret Manager refs| SM
+    GH -->|WIF auth| WIF
+    WIF --> AR
+    AR -->|pull on deploy| FE
+    AR -->|pull on deploy| BE
+    AR -->|pull on deploy| KC
+    GH -->|gcloud run deploy| BE
+
+    style LB fill:#4285F4,color:#fff
+    style WAF fill:#EA4335,color:#fff
+    style FE fill:#34A853,color:#fff
+    style BE fill:#34A853,color:#fff
+    style KC fill:#34A853,color:#fff
+    style DB fill:#FF9800,color:#fff
+    style GCS fill:#FF9800,color:#fff
+    style SM fill:#9C27B0,color:#fff
+    style AR fill:#9C27B0,color:#fff
+    style WIF fill:#607D8B,color:#fff
+    style GH fill:#24292E,color:#fff
+```
+
+### Capas de seguridad implementadas
+
+| Capa | Control | Detalles |
+|------|---------|----------|
+| Perimetral | Cloud Armor WAF | OWASP Top 10 + Rate Limit 100 req/min/IP |
+| Transporte | HTTPS/TLS 1.3 | Cert Google-managed en LB; Cloud Run solo HTTP interno |
+| Autenticación | Keycloak OIDC | JWT Bearer; `KC_PROXY_HEADERS=xforwarded` |
+| Autorización | IAM mínimo privilegio | SA separado por servicio; objectAdmin solo en backend |
+| Secretos | Secret Manager | 6 secretos; rotación automática 30 días; sin `.env` en prod |
+| Datos at-rest | AES-256 Google-managed | Cloud SQL + GCS cifrados por defecto |
+| Backup | Cloud SQL PITR | 15 backups diarios; retención de logs 7 días |
+| Imágenes | Trivy en CI/CD | Bloquea Critical/High CVEs antes del push a AR |
+| Red | VPC privada | Cloud SQL sin IP pública; acceso solo via VPC Connector |

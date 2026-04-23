@@ -172,7 +172,7 @@ Si tu frontend en producción usa otra URL (origen = esquema + host + puerto), h
 Para subida de imágenes (CU-05) con Google Cloud Storage:
 
 - Configurar `GCP_STORAGE_BUCKET_NAME` y el archivo de credenciales (montado como `GOOGLE_APPLICATION_CREDENTIALS` en el contenedor).
-- Guía: **[docs/GCP_HMAC_SETUP.md](docs/GCP_HMAC_SETUP.md)**.
+- Guía: **[docs/GCP_SETUP.md](docs/GCP_SETUP.md)**.
 
 Si no se configuran, la API arranca igual; las operaciones de imagen no usarán GCP.
 

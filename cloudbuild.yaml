@@ -1,0 +1,14 @@
+steps:
+- name: 'gcr.io/cloud-builders/docker'
+  args:
+    - build
+    - -f
+    - src/main/docker/Dockerfile.jvm.multi
+    - -t
+    - us-central1-docker.pkg.dev/livemenu-sec/livemenu/backend:latest
+    - .
+images:
+  - us-central1-docker.pkg.dev/livemenu-sec/livemenu/backend:latest
+options:
+  machineType: E2_HIGHCPU_8
+timeout: 1200s

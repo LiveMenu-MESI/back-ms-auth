@@ -65,7 +65,7 @@ services:
       DB_URL: jdbc:postgresql://postgres:5432/livemenu
       DB_USER: livemenu
       DB_PASSWORD: ${DB_PASSWORD}
-      KEYCLOAK_URL: ${KEYCLOAK_URL}
+      KEYCLOAK_URL: ${KEYCLOAK_URL:-http://keycloak:8080}
       OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET}
       KEYCLOAK_ADMIN_CLIENT_SECRET: ${KEYCLOAK_ADMIN_CLIENT_SECRET}
       KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
@@ -82,7 +82,7 @@ services:
       HTTPS_INSECURE_REQUESTS: ${HTTPS_INSECURE_REQUESTS:-enabled}
     volumes:
       # Mount service account JSON for GCP Storage (path on host from .env, e.g. ./gcp-credentials.json)
-      - ${GCP_CREDENTIALS_FILE:-/home/juaesm/secure/gcp.json}:/app/config/gcp-credentials.json:ro
+      - ${GCP_CREDENTIALS_FILE:-./gcp-credentials.json}:/app/config/gcp-credentials.json:ro
       # HTTPS keystore (compose/config/keystore.p12 when HTTPS_ENABLED=true)
       - ./config/keystore.p12:/app/config/keystore.p12:ro
     ports:
