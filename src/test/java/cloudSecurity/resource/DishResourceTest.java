@@ -1,11 +1,10 @@
-ackage cloudSecurity.resource;
+package cloudSecurity.resource;
 
 import cloudSecurity.base.BaseResourceTest;
 import io.quarkus.test.junit.QuarkusTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.math.BigDecimal;
 import java.util.Map;
 import java.util.UUID;
 

@@ -1,16 +1,13 @@
-ackage cloudSecurity.resource;
+package cloudSecurity.resource;
 
 import cloudSecurity.base.BaseResourceTest;
 import io.quarkus.test.junit.QuarkusTest;
-import cloudSecurity.entity.Restaurant;
-import io.restassured.http.ContentType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
 import java.util.UUID;
 
-import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.*;
 
 /**
