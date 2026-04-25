@@ -1,4 +1,4 @@
-﻿package cloudSecurity.resource;
+ackage cloudSecurity.resource;
 
 import cloudSecurity.base.BaseResourceTest;
 import io.quarkus.test.junit.QuarkusTest;
