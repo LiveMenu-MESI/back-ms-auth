@@ -1,4 +1,4 @@
-FROM quay.io/keycloak/keycloak:latest AS builder
+FROM quay.io/keycloak/keycloak:26 AS builder
 
 ENV KC_HEALTH_ENABLED=true
 ENV KC_METRICS_ENABLED=true
@@ -20,7 +20,7 @@ RUN keytool -genkeypair \
 
 RUN /opt/keycloak/bin/kc.sh build
 
-FROM quay.io/keycloak/keycloak:latest
+FROM quay.io/keycloak/keycloak:26
 COPY --from=builder /opt/keycloak/ /opt/keycloak/
 # Realm import: Keycloak will import this on first start (--import-realm)
 COPY realm/livemenu-realm.json /opt/keycloak/data/import/
