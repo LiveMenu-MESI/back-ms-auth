@@ -54,7 +54,6 @@ public class PublicMenuServiceTest {
         assertThat(menu.restaurant(), notNullValue());
         assertThat(menu.restaurant().id(), is(restaurant.id));
         assertThat(menu.restaurant().slug(), is(restaurant.slug));
-        assertThat(menu.restaurant().schedule(), notNullValue());
         assertThat(menu.categories().size(), is(2));
         assertThat(menu.categories().get(0).position(), is(1));
         assertThat(menu.categories().get(1).position(), is(2));

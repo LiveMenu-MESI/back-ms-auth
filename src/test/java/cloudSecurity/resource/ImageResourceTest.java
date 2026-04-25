@@ -1,6 +1,7 @@
-package cloudSecurity.resource;
+﻿package cloudSecurity.resource;
 
 import cloudSecurity.base.BaseResourceTest;
+import io.quarkus.test.junit.QuarkusTest;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
@@ -13,6 +14,7 @@ import static org.hamcrest.CoreMatchers.*;
  * Tests for ImageResource endpoints.
  * Note: These tests may require mocking GCP Storage service.
  */
+@QuarkusTest
 public class ImageResourceTest extends BaseResourceTest {
 
     @Test
@@ -69,4 +71,5 @@ public class ImageResourceTest extends BaseResourceTest {
         }
     }
 }
+
 

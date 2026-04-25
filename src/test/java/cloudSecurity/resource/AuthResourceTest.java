@@ -5,6 +5,7 @@ import cloudSecurity.service.auth.KeycloakAdminService;
 import cloudSecurity.service.auth.TokenService;
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusMock;
+import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.http.ContentType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -18,9 +19,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-/**
- * Tests for AuthResource endpoints.
- */
+@QuarkusTest
 public class AuthResourceTest extends BaseResourceTest {
 
     @InjectMock

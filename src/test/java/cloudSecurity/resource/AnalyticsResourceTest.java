@@ -1,6 +1,7 @@
 package cloudSecurity.resource;
 
 import cloudSecurity.base.BaseResourceTest;
+import io.quarkus.test.junit.QuarkusTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -8,9 +9,7 @@ import java.util.Map;
 
 import static org.hamcrest.CoreMatchers.*;
 
-/**
- * Tests for AnalyticsResource endpoints.
- */
+@QuarkusTest
 public class AnalyticsResourceTest extends BaseResourceTest {
 
     private String restaurantId;

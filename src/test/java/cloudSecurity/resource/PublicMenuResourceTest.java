@@ -1,6 +1,7 @@
-package cloudSecurity.resource;
+﻿package cloudSecurity.resource;
 
 import cloudSecurity.base.BaseResourceTest;
+import io.quarkus.test.junit.QuarkusTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -12,6 +13,7 @@ import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 /**
  * Tests for PublicMenuResource endpoints.
  */
+@QuarkusTest
 public class PublicMenuResourceTest extends BaseResourceTest {
 
     private String restaurantSlug;
@@ -161,4 +163,5 @@ public class PublicMenuResourceTest extends BaseResourceTest {
         // First category must be position 1 (asc order); second can be 1 or 2
     }
 }
+
 

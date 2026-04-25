@@ -1,6 +1,7 @@
-package cloudSecurity.resource;
+﻿package cloudSecurity.resource;
 
 import cloudSecurity.base.BaseResourceTest;
+import io.quarkus.test.junit.QuarkusTest;
 import cloudSecurity.entity.Restaurant;
 import io.restassured.http.ContentType;
 import org.junit.jupiter.api.BeforeEach;
@@ -15,6 +16,7 @@ import static org.hamcrest.CoreMatchers.*;
 /**
  * Tests for RestaurantResource endpoints.
  */
+@QuarkusTest
 public class RestaurantResourceTest extends BaseResourceTest {
 
     private String restaurantId;
@@ -168,4 +170,5 @@ public class RestaurantResourceTest extends BaseResourceTest {
                 .statusCode(404);
     }
 }
+
 

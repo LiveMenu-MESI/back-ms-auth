@@ -1,6 +1,7 @@
-package cloudSecurity.resource;
+﻿package cloudSecurity.resource;
 
 import cloudSecurity.base.BaseResourceTest;
+import io.quarkus.test.junit.QuarkusTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -11,6 +12,7 @@ import static org.hamcrest.CoreMatchers.*;
 /**
  * Tests for QRCodeResource endpoints.
  */
+@QuarkusTest
 public class QRCodeResourceTest extends BaseResourceTest {
 
     private String restaurantId;
@@ -76,4 +78,5 @@ public class QRCodeResourceTest extends BaseResourceTest {
                 .statusCode(401);
     }
 }
+
 
