@@ -6,6 +6,7 @@ import io.quarkus.oidc.client.runtime.OidcClientConfig;
 import io.quarkus.oidc.client.runtime.OidcClientConfig.Grant.Type;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Instance;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 /**
@@ -22,11 +23,11 @@ public class AuthOidcClientProvider {
     String keycloakRealm;
     @ConfigProperty(name = "OIDC_CLIENT_ID", defaultValue = "livemenu-backend")
     String clientId;
-    @ConfigProperty(name = "OIDC_CLIENT_SECRET")
+    @ConfigProperty(name = "OIDC_CLIENT_SECRET", defaultValue = "")
     String clientSecret;
 
     @jakarta.inject.Inject
-    OidcClients oidcClients;
+    Instance<OidcClients> oidcClientsInstance;
 
     private volatile OidcClient cached;
     private volatile Uni<OidcClient> createUni;
@@ -35,6 +36,10 @@ public class AuthOidcClientProvider {
      * Returns the auth OIDC client, creating it on first call (connects to Keycloak then).
      */
     public Uni<OidcClient> getAuthClient() {
+        if (!oidcClientsInstance.isResolvable()) {
+            return Uni.createFrom().failure(
+                new IllegalStateException("OIDC client not available (disabled in this profile)"));
+        }
         if (cached != null) {
             return Uni.createFrom().item(cached);
         }
@@ -51,7 +56,7 @@ public class AuthOidcClientProvider {
                         .credentials(clientSecret)
                         .grant(Type.PASSWORD)
                         .build();
-                createUni = oidcClients.newClient(cfg)
+                createUni = oidcClientsInstance.get().newClient(cfg)
                         .onItem().invoke(c -> cached = c);
             }
             return createUni;
