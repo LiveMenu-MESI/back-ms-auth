@@ -44,8 +44,8 @@ public class QRCodeResourceTest extends BaseResourceTest {
                 .get(ADMIN_PATH + "/restaurants/" + restaurantId + "/qr")
                 .then()
                 .statusCode(200)
-                .body("url", notNullValue())
-                .body("size", notNullValue());
+                .body("qrUrl", notNullValue())
+                .body("defaultSize", notNullValue());
     }
 
     @Test

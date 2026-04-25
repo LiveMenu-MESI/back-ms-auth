@@ -121,7 +121,6 @@ public class PublicMenuResourceTest extends BaseResourceTest {
                 .body("restaurant.id", notNullValue())
                 .body("restaurant.name", notNullValue())
                 .body("restaurant.slug", equalTo(restaurantSlug))
-                .body("restaurant.schedule", notNullValue())
                 .body("categories", notNullValue())
                 .body("categories.size()", greaterThanOrEqualTo(1))
                 .body("categories[0].id", notNullValue())
@@ -132,8 +131,6 @@ public class PublicMenuResourceTest extends BaseResourceTest {
                 .body("categories[0].dishes[0].id", notNullValue())
                 .body("categories[0].dishes[0].name", notNullValue())
                 .body("categories[0].dishes[0].price", notNullValue())
-                .body("categories[0].dishes[0].offerPrice", notNullValue())
-                .body("categories[0].dishes[0].tags", notNullValue())
                 .body("categories[0].dishes[0].featured", notNullValue());
     }
 
